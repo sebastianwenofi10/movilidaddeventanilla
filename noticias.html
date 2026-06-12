@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UNAC | Noticias y Avisos Oficiales</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.1.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <style>
+        :root { --accent: #ffc107; --dark: #050505; }
+        body, html { margin: 0; padding: 0; min-height: 100vh; background-color: var(--dark); font-family: 'Inter', sans-serif; color: #ffffff; overflow-x: hidden; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+
+        .main-wrapper {
+            position: relative; z-index: 10;
+            background: radial-gradient(circle at 50% 50%, rgba(20, 20, 20, 0.4) 0%, rgba(5, 5, 5, 1) 100%), 
+                        url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            min-height: 100vh; width: 100%;
+        }
+
+        header { width: 100%; max-width: 1200px; padding: 30px 20px; z-index: 1000; margin: 0 auto; }
+        .nav-link { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; position: relative; transition: 0.3s; }
+        .nav-link:hover, .active-link { color: var(--accent); }
+        .nav-link::after { content: ''; position: absolute; width: 0; height: 2px; bottom: -6px; left: 0; background: var(--accent); transition: width 0.3s; }
+        .nav-link:hover::after, .active-link::after { width: 100%; }
+
+        #mobile-menu { position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 35px; }
+        #mobile-menu.active { display: flex; }
+
+        .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px); border-radius: 20px; }
+        .news-card { padding: 40px; margin-bottom: 50px; border-left: 4px solid var(--accent); }
+        .news-tag { color: var(--accent); font-weight: 900; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 15px; display: block; }
+        .news-title { font-family: 'Montserrat', sans-serif; font-size: 1.6rem; font-weight: 900; line-height: 1.3; margin-bottom: 25px; font-style: italic; }
+        
+        .sub-title { color: var(--accent); font-weight: 800; margin-bottom: 15px; display: block; font-size: 1rem; border-bottom: 1px solid rgba(255,193,7,0.2); padding-bottom: 5px; }
+        .item { margin-bottom: 12px; padding-left: 15px; color: #ddd; font-size: 0.9rem; border-left: 2px solid rgba(255,255,255,0.1); }
+
+        .schedule-box { background: rgba(255,193,7,0.05); border: 1px solid rgba(255,193,7,0.2); border-radius: 15px; padding: 20px; display: flex; gap: 20px; justify-content: center; margin-top: 15px; }
+        .schedule-item { background: rgba(0,0,0,0.4); border-radius: 10px; padding: 15px; border-left: 4px solid var(--accent); min-width: 180px; text-align: center; }
+        .schedule-item i { font-size: 1.2rem; color: var(--accent); margin-bottom: 8px; display: block; }
+        .schedule-item span { font-size: 0.7rem; font-weight: 900; color: #aaa; text-transform: uppercase; display: block; }
+        .schedule-item p { font-size: 1.2rem; font-weight: 900; color: #fff; margin-top: 2px; }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 30px 0; }
+        .chart-card { background: #fff; border-radius: 15px; padding: 20px; height: 350px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .chart-card h3 { font-size: 10px; color: #000; font-weight: 900; margin-bottom: 10px; text-align: center; text-transform: uppercase; }
+
+        .status-box { padding: 20px; border-radius: 12px; margin: 20px 0; font-size: 0.9rem; }
+        .green { background: rgba(45, 164, 78, 0.1); border: 1px solid #2da44e; color: #a6f3b7; }
+        .red { background: rgba(248, 81, 73, 0.1); border: 1px solid #f85149; color: #ffb3b0; }
+
+        .footer-sig { margin-top: 30px; font-weight: 800; color: var(--accent); text-align: right; font-style: italic; }
+        #globe-container { width: 100%; height: 300px; pointer-events: none; }
+
+        @media (max-width: 768px) {
+            .nav-desktop { display: none; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .schedule-box { flex-direction: column; align-items: center; }
+            .schedule-item { width: 100%; }
+        }
+    </style>
+</head>
+<body onload="renderCharts()">
+
+    <div id="mobile-menu">
+        <button onclick="toggleMenu()" class="absolute top-10 right-10 text-yellow-500 text-4xl"><i class="fa-solid fa-xmark"></i></button>
+        <a href="index.html" class="text-xl font-black uppercase tracking-[4px] text-white">Inicio</a>
+        <a href="rutas.html" class="text-xl font-black uppercase tracking-[4px] text-white">Rutas</a>
+        <a href="ticket.html" class="text-xl font-black uppercase tracking-[4px] text-white">Ticket</a>
+        <a href="registro.html" class="text-xl font-black uppercase tracking-[4px] text-white">Registro</a>
+        <a href="noticias.html" class="text-xl font-black uppercase tracking-[4px] text-yellow-500 underline decoration-yellow-500">Noticias</a>
+        <a href="contacto.html" class="text-xl font-black uppercase tracking-[4px] text-white">Contacto</a>
+    </div>
+
+    <div class="main-wrapper">
+        <header class="flex justify-between items-center relative z-20 animate-fade-up">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-yellow-500 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-bus text-black text-lg"></i></div>
+                <div class="flex flex-col text-left leading-none uppercase">
+                    <span class="text-[10px] font-black tracking-widest leading-none">UNAC</span>
+                    <span class="text-[9px] text-yellow-500 font-bold">Movilidad</span>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-8 nav-desktop">
+                <a href="index.html" class="nav-link">Inicio</a>
+                <a href="rutas.html" class="nav-link">Rutas</a>
+                <a href="ticket.html" class="nav-link">Ticket</a>
+                <a href="registro.html" class="nav-link">Registro</a>
+                <a href="noticias.html" class="nav-link active-link">Noticias</a>
+                <a href="contacto.html" class="nav-link">Contacto</a>
+            </nav>
+            <button onclick="toggleMenu()" class="md:hidden bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-2 rounded-lg font-black text-xs">MENU <i class="fa-solid fa-bars-staggered"></i></button>
+        </header>
+
+        <main class="max-w-4xl mx-auto px-4 py-12">
+            
+            <div class="text-center mb-16 animate-fade-up">
+                <span class="text-yellow-500 text-[10px] font-black uppercase tracking-[5px] mb-2 block">Mantente informado</span>
+                <h1 class="text-5xl md:text-6xl font-black uppercase italic tracking-tighter mb-4">Noticias y <span class="text-yellow-500">Avisos</span></h1>
+                <p class="text-gray-400 max-w-2xl mx-auto text-sm md:text-base font-light">
+                    Entérate de las últimas novedades, cambios en horarios, campañas y comunicados oficiales de la Oficina de Movilidad Universitaria.
+                </p>
+            </div>
+
+            <!-- NUEVA NOTICIA DE SUMA URGENCIA (AGREGADA) -->
+            <div class="news-card glass animate-fade-up" style="border-left: 4px solid #ff4500;">
+                <span class="news-tag" style="color: #ff4500;">📢 SUMA URGENCIA - INNOVACIÓN 🚀</span>
+                <h2 class="news-title">¡LA INNOVACIÓN LLEGÓ A NUESTRO SERVICIO! 🌐</h2>
+                <p class="text-sm md:text-base leading-relaxed mb-6">Presentamos nuestra nueva plataforma web modernizada 🌐, diseñada para gestionar todo en tiempo real y brindarte un servicio más eficiente y seguro.<br><br>Para que nadie se quede fuera y podamos seguir mejorando, lee atentamente las siguientes instrucciones:</p>
+
+                <span class="sub-title">📝 1. EL REGISTRO ES LA LLAVE DE TODO</span>
+                <div class="item">Si aún no apareces en el sistema, ¡hazlo ya! Es un proceso único y sencillo. 📍 ¿Dónde? Ve a la opción <b>"REGISTRO"</b> en nuestra web.</div>
+                <div class="item"><b>⚠️ Importante:</b> Si no estás registrado en la base de datos general, el sistema te bloqueará el acceso a los formularios de la tarde y no podrás generar tus tickets. 🚫</div>
+                <div class="item"><b>✅ Beneficio:</b> Con un solo registro, ya tienes acceso a todos los beneficios y formularios de manera directa.</div>
+
+                <span class="sub-title mt-6">🎟️ 2. GENERACIÓN DE TICKETS QR</span>
+                <div class="item">Para evitar infiltrados implementamos el escaneo obligatorio. 📱🔍 <b>🌅 Mañana:</b> 5:15 a.m. | <b>🌆 Tarde/Noche:</b> 6:00 p.m.</div>
+                <div class="item"><b>Entra a la opción "TICKET"</b>, ingresa tu DNI y selecciona tu horario. 👮 Al abordar habrá un encargado escaneando. ¡Sin QR no hay ingreso!</div>
+
+                <span class="sub-title mt-6">🕓 3. ESPECIFICACIONES PARA EL TURNO TARDE</span>
+                <div class="item">El sistema se habilita a las <b>5:00 p.m. 🕔</b> Primero llenas el formulario de asistencia y al culminar, el sistema te permitirá generar tus QR.</div>
+
+                <span class="sub-title mt-6">📈 ¿POR QUÉ ES IMPORTANTE ESTO?</span>
+                <div class="item">Estamos utilizando esta data en tiempo real para ver la demanda real de pasajeros. 📊 Con estos números ya gestionamos nuevas rutas. 🛠️ Evitamos que personas ajenas ocupen tu lugar. 🛡️</div>
+
+                <p class="footer-sig">Atentamente,<br>Delegados de Movilidad Universitaria 🎓✨</p>
+            </div>
+
+            <!-- NOTICIA 1 ACTUALIZADA (TEXTO COMPLETO RESTAURADO) -->
+            <div class="news-card glass animate-fade-up">
+                <span class="news-tag">COMUNICADO OFICIAL</span>
+                <h2 class="news-title">📢 COMUNICADO OFICIAL: MOVILIDAD VENTANILLA 📢</h2>
+                <p class="mb-6">Estimados compañeros, les informo la programación oficial y única vigente para la semana del 27 de abril al 1 de mayo. 📅<br><br>Esta información se les comunica de manera directa para asegurar que todos cuenten con los horarios confirmados para sus traslados:</p>
+
+                <span class="sub-title">🗓️ CRONOGRAMA SEMANAL (Lunes a Viernes):</span>
+                <div class="schedule-box">
+                    <div class="schedule-item">
+                        <i class="fa-solid fa-school"></i>
+                        <span>Salida Mañana</span>
+                        <p>5:15 AM</p>
+                    </div>
+                    <div class="schedule-item">
+                        <i class="fa-solid fa-bus"></i>
+                        <span>Salida Tarde/Noche</span>
+                        <p>6:00 PM</p>
+                    </div>
+                </div>
+
+                <div class="mt-10">
+                    <span class="sub-title">⚠️ SOBRE LOS TURNOS ADICIONALES:</span>
+                    <p class="text-sm mb-4">Soy plenamente consciente de la gran demanda que tiene nuestra ruta de Ventanilla y de la necesidad urgente de contar con más horarios. Sin embargo, les informo que el turno de las <b>02:15 PM</b> y demás horarios adicionales aún no han sido habilitados por las autoridades. 🚫</p>
+                    <p class="text-sm italic text-gray-300">Les pido las disculpas del caso por esta situación que limita nuestro transporte. Como su delegado, me encuentro gestionando y presionando constantemente para que estos turnos se activen lo antes posible. No dejaré de insistir ante las instancias correspondientes, ya que nuestra seguridad y puntualidad son prioridad. 🛡️💪</p>
+                </div>
+                <p class="mt-6 font-bold text-yellow-500 text-sm">Les recomiendo tomar las precauciones necesarias para sus retornos y estar atentos a este canal para cualquier actualización inmediata. ⏳🔥</p>
+                <p class="footer-sig">Atentamente,<br>Delegado Sebastian 🎓<br>Movilidad Ventanilla - UNAC 🦁✨</p>
+            </div>
+
+            <!-- NOTICIA 2: CUMPLEAÑOS (TEXTO COMPLETO RESTAURADO) -->
+            <div class="news-card glass birthday-card animate-fade-up">
+                <span class="news-tag">🎁 BENEFICIO EXCLUSIVO</span>
+                <h2 class="news-title text-yellow-500">¡FELIZ CUMPLEAÑOS! 🎂🎉✨</h2>
+                <p class="text-lg font-bold mb-6 italic">¡En tu mes especial, el Delegado te tiene un súper regalo! 🎁 No olvides que por tu día tienes un ASIENTO GARANTIZADO en la movilidad. 🚌💺🔝</p>
+                <span class="sub-title">⚠️ Ten en cuenta las siguientes condiciones:</span>
+                <div class="item"><b>🆔 Requisito:</b> Presentar tu DNI para validar tu fecha de nacimiento.</div>
+                <div class="item"><b>⏰ Horarios permitidos:</b> Solo aplica para las rutas de las 6:00 PM y 10:15 PM.</div>
+                <div class="item"><b>🗓️ Vigencia:</b> Tienes una semana para reclamarlo a partir de tu fecha de cumple.</div>
+                <div class="item"><b>☝️ Nota:</b> Solo es válido una única vez en cualquier día de tu semana de cumple.</div>
+                <p class="text-center font-black text-yellow-500 mt-6 uppercase tracking-widest">¡No dejes pasar tu premio y viaja cómodo! 🥳🎈</p>
+            </div>
+
+            <!-- NOTICIA 3: OPERACIONES (TEXTO COMPLETO RESTAURADO) -->
+            <div class="news-card glass animate-fade-up">
+                <span class="news-tag">COMUNICADO OFICIAL</span>
+                <h2 class="news-title">📢 Actualización de Operaciones - Ruta Ventanilla 🚍</h2>
+                <p class="mb-4">Estimados estudiantes, se les informa sobre la situación actual de los horarios para el ciclo 2026-A:</p>
+                <span class="sub-title">✅ RUTAS EN OPERACIÓN (Desde hoy, 30 de marzo)</span>
+                <div class="item"><b>05:15 AM</b> – Salida desde paradero inicial hacia el Campus 🏫</div>
+                <div class="item"><b>06:00 PM</b> – Salida desde Campus Bellavista (Sede UNAC) 🚍</div>
+                <div class="mt-6">
+                    <span class="sub-title">💻 Organización y Registro</span>
+                    <p class="text-sm">Para estos nuevos horarios, toda la información sobre la logística y organización de asientos se comunicará detalladamente a través de nuestra página oficial/plataforma. Les recomendamos mantenerse al tanto de las publicaciones en la plataforma para asegurar su registro y conocer los protocolos de abordaje. 📋✨</p>
+                </div>
+                <p class="footer-sig">Atentamente, Delegatura de Ruta Ventanilla</p>
+            </div>
+
+            <!-- NOTICIA 4: REPORTE DE GESTIÓN (TEXTO COMPLETO RESTAURADO) -->
+            <div class="news-card glass animate-fade-up">
+                <span class="news-tag">REPORTE DE GESTIÓN</span>
+                <h2 class="news-title">📢 REPORTE DE GESTIÓN: RESULTADOS RUMBO AL CICLO 2026-A 🚌💨</h2>
+                <p class="mb-6">¡Hola, comunidad de la Ruta Ventanilla! 👋😊 Tal como lo prometimos, la transparencia es la base de nuestra organización. Tras el cierre del formulario de Actualización Obligatoria de Datos, compartimos con ustedes los resultados que respaldan nuestras próximas gestiones ante las autoridades para este inicio de clases el 1 de abril. 🎓📚</p>
+                
+                <span class="sub-title">📊 Lo que dicen nuestros datos:</span>
+                <div class="dashboard-grid">
+                    <div class="chart-card"><h3>FACULTAD (OBLIGATORIO)</h3><canvas id="chartFacultad"></canvas></div>
+                    <div class="chart-card"><h3>CICLO DE ESTUDIOS 2026-A</h3><canvas id="chartCiclo"></canvas></div>
+                    <div class="chart-card"><h3>HORARIOS QUE TOMABAN LA MOVILIDAD</h3><canvas id="chartHorarios"></canvas></div>
+                    <div class="chart-card"><h3>RATIFICACIÓN Y VOTO DE CONFIANZA</h3><canvas id="chartVoto"></canvas></div>
+                </div>
+
+                <div class="item"><b>Respaldo Contundente:</b> ¡Gracias por la confianza! Contamos con un <b>93.4% de aprobación</b> a la gestión actual. ✅🤝</div>
+                <div class="item"><b>Demanda de Horarios:</b> Hemos identificado que el turno Tarde-Noche (6:00 PM) y el de la Mañana (5:15 AM) son los más críticos. Usaremos estos números para exigir que las unidades cubran la capacidad necesaria. 🚍</div>
+                <div class="item"><b>Participación Total:</b> Estudiantes de todas las facultades, liderados por FCE, FCC y FCA, ya están registrados. 🏛️👥</div>
+                
+                <p class="mt-6 p-4 bg-red-500/10 border border-red-500/20 text-xs italic">⚠️ <b>RECORDATORIO FINAL:</b> El padrón oficial ha sido actualizado. Como se avisó, este registro es VITAL para garantizar tu cupo y seguridad en la ruta. El verano se acaba, pero nuestro compromiso por una movilidad segura y organizada para este 2026-A está más fuerte que nunca. ☀️🛡️</p>
+                <p class="footer-sig">Atentamente, Delegado Sebastian – Movilidad Ventanilla 🫡🚌</p>
+                <p class="text-center font-bold mt-4 italic text-yellow-500">¡Gracias por ser parte del cambio! Nos vemos en la ruta este 1 de abril. 🛣️🙌</p>
+            </div>
+
+            <!-- NOTICIA 5: INNOVACIÓN (TEXTO COMPLETO RESTAURADO) -->
+            <div class="news-card glass animate-fade-up">
+                <span class="news-tag">INNOVACIÓN</span>
+                <h2 class="news-title">🚀 ¡INNOVACIÓN TECNOLÓGICA Y ORDEN EN LA RUTA! 🚌📲</h2>
+                <p class="mb-6">¡Hola de nuevo, compañeros y compañeras! 👋😊 Seguimos modernizando nuestra gestión para que este 30 de abril todo sea más eficiente. Como su delegado 🫡, les presento la nueva logística digital diseñada para eliminar las colas:</p>
+                
+                <span class="sub-title">✅ ASÍ SERÁ EL NUEVO PROCESO DE ACCESO:</span>
+                <div class="status-box green"><b>¡VERIFICACIÓN CORRECTA! (Pase Verde):</b> Si tus datos son válidos, recibirás tu correo de confirmación con tu <b>NÚMERO DE ASIENTO OFICIAL</b> (Cupos limitados a 40 asientos). 💺🔢</div>
+                <div class="status-box red"><b>VERIFICACIÓN INCORRECTA (Aviso Rojo):</b> Si ingresas mal tu DNI o Código... <b>IMPORTANTE:</b> Con una verificación incorrecta NO se te asignará un asiento. ❌⚠️</div>
+                
+                <span class="sub-title mt-6">⏳ LOGÍSTICA EN TIEMPO REAL:</span>
+                <div class="item"><b>📅 Cierre de Padrón:</b> El formulario se procesa y envía automáticamente una vez hayas completado el formulario🙃.</div>
+                <div class="item"><b>🚍 Llegada del Bus:</b> La movilidad estará en el punto de partida a las 6:00 PM (puntualidad).</div>
+                <div class="item"><b>🤳 Abordaje Rápido:</b> ¡Olvídate de hacer colas! Ya no habrá listas manuales. Muestra el correo de verificación. ✅</div>
+
+                <span class="sub-title mt-6">⚠️ SOBRE LOS ASIENTOS (ACUERDO GENERAL):</span>
+                <div class="item"><b>🏆 Con Registro Válido:</b> Quienes reciban su ¡Verificación Correcta! tienen su asiento asegurado y numerado.</div>
+                <div class="item"><b>🚶 Sin Registro o Incorrectos:</b> Podrás subir, pero lamentablemente viajarás sin asiento asignado. ¡La movilidad es GRATUITA PARA TODOS! 🟢💺</div>
+                
+                <span class="sub-title mt-6">💡 RECOMENDACIONES:</span>
+                <div class="item"><b>🔋 Batería cargada:</b> Ten tu celular listo para mostrar el pase digital.</div>
+                <div class="item"><b>⏱️ Puntualidad:</b> Ten el correo abierto antes de llegar a la puerta.</div>
+                <p class="footer-sig">Atentamente, Delegado Sebastian – Innovación y Movilidad Ventanilla 🫡🚌</p>
+            </div>
+
+            <div id="globe-container" class="animate-float"></div>
+        </main>
+
+        <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/20 mt-10 relative z-20">
+            <span class="text-center text-[10px] font-bold tracking-[8px] text-yellow-500 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
+            <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic">© 2026 UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
+        </footer>
+    </div>
+
+    <script>
+        function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
+
+        Chart.register(ChartDataLabels);
+        function renderCharts() {
+            const commonOptions = {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } },
+                    datalabels: { color: '#000', font: { weight: 'bold', size: 10 }, formatter: (v, ctx) => {
+                        let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                        return (v * 100 / sum).toFixed(1) + "%";
+                    }}
+                }
+            };
+
+            new Chart(document.getElementById('chartFacultad'), {
+                type: 'pie',
+                data: {
+                    labels: ['FCE', 'FCC', 'FCA', 'FIEE', 'FIQ', 'FIARN', 'FCS', 'Otros'],
+                    datasets: [{ data: [84, 63, 63, 63, 55, 43, 42, 146], backgroundColor: ['#ffc107', '#4285f4', '#ea4335', '#34a853', '#9334e6', '#12b5cb', '#70757a', '#000'] }]
+                },
+                options: commonOptions
+            });
+
+            new Chart(document.getElementById('chartCiclo'), {
+                type: 'pie',
+                data: {
+                    labels: ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'],
+                    datasets: [{ data: [62, 106, 87, 70, 70, 56, 45, 63], backgroundColor: ['#4285f4', '#ea4335', '#ffc107', '#34a853', '#9334e6', '#12b5cb', '#e91e63', '#70757a'] }]
+                },
+                options: commonOptions
+            });
+
+            new Chart(document.getElementById('chartHorarios'), {
+                type: 'bar',
+                data: {
+                    labels: ['6:00 PM', '5:15 AM', '2:30 PM', '10:15 PM'],
+                    datasets: [{ data: [417, 367, 278, 176], backgroundColor: '#ffc107' }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    scales: { x: { display: false } },
+                    plugins: { legend: { display: false }, datalabels: { color: '#000', anchor: 'end', align: 'start' } }
+                }
+            });
+
+            new Chart(document.getElementById('chartVoto'), {
+                type: 'pie',
+                data: {
+                    labels: ['SÍ', 'NO'],
+                    datasets: [{ data: [522, 37], backgroundColor: ['#3367d6', '#d93025'] }]
+                },
+                options: commonOptions
+            });
+        }
+
+        let scene, camera, renderer, globe;
+        function initThree() {
+            const container = document.getElementById('globe-container');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.z = 100;
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 4), new THREE.MeshBasicMaterial({ color: 0xffc107, wireframe: true, transparent: true, opacity: 0.15 }));
+            scene.add(globe);
+            animate();
+        }
+        function animate() { requestAnimationFrame(animate); globe.rotation.y += 0.002; renderer.render(scene, camera); }
+        
+        window.onload = () => { initThree(); renderCharts(); };
+    </script>
+</body>
+</html>
