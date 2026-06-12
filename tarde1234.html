@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UNAC | Sincronización Turno Tarde</title>
+    
+    <!-- LIBRERÍAS EXTERNAS - MANTENIDAS AL 100% -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- FIREBASE COMPAT - CARGA COMPLETA -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root { 
+            --accent: #ffc107; 
+            --dark: #050505; 
+            --white-clean: #f8f9fa; 
+        }
+
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            min-height: 100vh; 
+            background-color: var(--dark); 
+            font-family: 'Inter', sans-serif; 
+            color: #ffffff; 
+            overflow-x: hidden; 
+        }
+
+        @keyframes fadeInUp { 
+            from { opacity: 0; transform: translateY(30px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
+
+        .main-wrapper {
+            position: relative; 
+            z-index: 10;
+            background: radial-gradient(circle at 50% 50%, rgba(20, 20, 20, 0.4) 0%, rgba(5, 5, 5, 1) 100%), 
+                        url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920');
+            background-size: cover; 
+            background-position: center; 
+            background-attachment: fixed;
+            min-height: 100vh; 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column;
+        }
+
+        header { width: 100%; max-width: 1200px; padding: 30px 20px; z-index: 1000; margin: 0 auto; }
+        .nav-link { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; position: relative; transition: 0.3s; }
+        .nav-link:hover, .active-link { color: var(--accent); }
+        .nav-link::after { content: ''; position: absolute; width: 0; height: 2px; bottom: -6px; left: 0; background: var(--accent); transition: width 0.3s; }
+        .nav-link:hover::after, .active-link::after { width: 100%; }
+
+        #mobile-menu { position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 35px; }
+        #mobile-menu.active { display: flex; }
+
+        /* HUD DE CARGA SIMILAR A ONPE */
+        #scanning-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.98); 
+            z-index: 9999; display: none; flex-direction: column; 
+            align-items: center; justify-content: center; text-align: center;
+            backdrop-filter: blur(25px); 
+        }
+
+        /* TECLADO VIRTUAL */
+        .keypad-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: 800;
+            padding: 18px 0;
+            transition: all 0.2s;
+            cursor: pointer;
+            user-select: none;
+        }
+        .keypad-btn:active {
+            background: var(--accent);
+            color: black;
+            transform: scale(0.92);
+        }
+
+        /* TICKET DIGITAL MANTENIDO AL 100% */
+        .ticket-tech { 
+            background: #ffffff; color: #000; border-radius: 50px; width: 100%; max-width: 440px; 
+            margin: 0 auto; overflow: hidden; box-shadow: 0 60px 150px rgba(0,0,0,0.9);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .tech-header { background: #000; color: #fff; padding: 30px; text-align: center; border-bottom: 6px solid var(--accent); }
+        .asiento-display { font-family: 'Montserrat'; font-size: 32px; font-weight: 900; color: #e11d48; line-height: 1.2; margin: 20px 0; text-transform: uppercase; }
+        .data-grid { background: #f1f1f1; padding: 25px; border-radius: 30px; margin: 0 25px 25px; text-align: left; font-family: 'Share Tech Mono', monospace; }
+        .turno-box { background: #000; color: var(--accent); padding: 15px; border-radius: 20px; font-weight: 900; text-transform: uppercase; font-size: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* INPUT INHABILITADO PARA ESCRIBIR DIRECTO (FORZADO A TECLADO NUMÉRICO VIRTUAL) */
+        .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,193,7,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; pointer-events: none; }
+
+        .hidden-section { display: none !important; }
+        #globe-box, #globe-box-2 { width: 100%; height: 320px; pointer-events: none; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <!-- PANTALLA NEGRA DE BLOQUEO DE SEGURIDAD (ACCESO NO AUTORIZADO) -->
+    <div id="blocking-overlay" class="fixed inset-0 bg-[#050505] z-[10000] flex flex-col items-center justify-center text-center p-6" style="display: none;">
+        <i class="fa-solid fa-user-slash text-6xl text-red-600 mb-6 animate-pulse"></i>
+        <h2 class="text-3xl font-black text-white uppercase tracking-widest mb-2">Acceso Inhabilitado</h2>
+        <p class="text-gray-500 text-[10px] uppercase max-w-sm tracking-widest leading-relaxed">Este turno no está activo o se ha intentado ingresar directamente. Active el turno tarde y pase por el panel oficial.</p>
+    </div>
+
+    <!-- HUD DE CARGA ESTILO ONPE -->
+    <div id="scanning-overlay">
+        <div class="flex items-center justify-center gap-6 mb-4">
+            <div class="w-16 h-[2px] bg-white/20"></div>
+            <div class="relative w-28 h-28 flex items-center justify-center">
+                <!-- Anillo exterior rotatorio segmentado -->
+                <div class="absolute inset-0 rounded-full border-4 border-dashed border-sky-600 animate-spin" style="animation-duration: 4s;"></div>
+                <!-- Círculo interior estático ONPE -->
+                <div class="w-20 h-20 bg-white rounded-full flex flex-col items-center justify-center shadow-2xl z-10">
+                    <span class="text-red-500 font-extrabold text-[9px] tracking-widest leading-none">UNAC</span>
+                    <i class="fa-solid fa-fingerprint text-red-600 text-lg my-0.5"></i>
+                    <span class="text-blue-900 font-black text-base leading-none tracking-tighter">SISTEMA</span>
+                </div>
+            </div>
+            <div class="w-16 h-[2px] bg-white/20"></div>
+        </div>
+        <p id="loader-msg" class="font-mono text-[10px] tracking-[6px] text-yellow-500 uppercase font-black">VALIDANDO IDENTIDAD...</p>
+    </div>
+
+    <!-- MENÚ MÓVIL ORIGINAL -->
+    <div id="mobile-menu">
+        <button onclick="toggleMenu()" class="absolute top-10 right-10 text-yellow-500 text-4xl"><i class="fa-solid fa-xmark"></i></button>
+        <a href="index.html" class="text-xl font-black uppercase tracking-[4px] text-white">Inicio</a>
+        <a href="rutas.html" class="text-xl font-black uppercase tracking-[4px] text-white">Rutas</a>
+        <a href="ticket.html" class="text-xl font-black uppercase tracking-[4px] text-yellow-500 underline">Ticket</a>
+        <a href="registro.html" class="text-xl font-black uppercase tracking-[4px] text-white">Registro</a>
+        <a href="noticias.html" class="text-xl font-black uppercase tracking-[4px] text-white">Noticias</a>
+        <a href="contacto.html" class="text-xl font-black uppercase tracking-[4px] text-white">Contacto</a>
+    </div>
+
+    <div class="main-wrapper">
+        <!-- NAVEGACIÓN COPIADA TAL CUAL -->
+        <header class="flex justify-between items-center relative z-20 animate-fade-up">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-yellow-500 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-bus text-black text-lg"></i></div>
+                <div class="flex flex-col text-left leading-none uppercase">
+                    <span class="text-[10px] font-black tracking-widest leading-none">UNAC</span>
+                    <span class="text-[9px] text-yellow-500 font-bold">Movilidad</span>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-8 nav-desktop">
+                <a href="index.html" class="nav-link">Inicio</a>
+                <a href="rutas.html" class="nav-link">Rutas</a>
+                <a href="ticket.html" class="nav-link active-link">Ticket</a>
+                <a href="registro.html" class="nav-link">Registro</a>
+                <a href="noticias.html" class="nav-link">Noticias</a>
+                <a href="contacto.html" class="nav-link">Contacto</a>
+            </nav>
+            <button onclick="toggleMenu()" class="md:hidden bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2">
+                MENU <i class="fa-solid fa-bars-staggered"></i>
+            </button>
+        </header>
+
+        <main class="max-w-6xl mx-auto px-6 py-8 w-full flex-grow z-20 flex flex-col justify-center items-center">
+            
+            <!-- STEP 1: KEYPAD INGRESO DNI -->
+            <div id="step-1" class="w-full max-w-sm text-center animate-fade-up">
+                <div class="mb-6">
+                    <span class="text-[9px] font-black tracking-[4px] text-yellow-500 uppercase">Sincronización Autorizada</span>
+                    <h2 class="text-3xl font-black italic uppercase text-white mt-1">Turno <span class="text-yellow-500">Tarde</span></h2>
+                </div>
+
+                <div class="bg-white/5 border border-white/10 p-6 rounded-[35px] shadow-2xl backdrop-blur-md">
+                    <!-- RECUADRO DNI INHABILITADO A TECLADOS EXTERNOS -->
+                    <div class="mb-6">
+                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Ingresar DNI</label>
+                        <input type="text" id="dniDisplay" class="input-tech" placeholder="••••••••" readonly>
+                    </div>
+
+                    <!-- TECLAS NUMÉRICAS DEL 0 AL 9 -->
+                    <div class="grid grid-cols-3 gap-3 mb-4">
+                        <button onclick="Core.pressKey('1')" class="keypad-btn">1</button>
+                        <button onclick="Core.pressKey('2')" class="keypad-btn">2</button>
+                        <button onclick="Core.pressKey('3')" class="keypad-btn">3</button>
+                        <button onclick="Core.pressKey('4')" class="keypad-btn">4</button>
+                        <button onclick="Core.pressKey('5')" class="keypad-btn">5</button>
+                        <button onclick="Core.pressKey('6')" class="keypad-btn">6</button>
+                        <button onclick="Core.pressKey('7')" class="keypad-btn">7</button>
+                        <button onclick="Core.pressKey('8')" class="keypad-btn">8</button>
+                        <button onclick="Core.pressKey('9')" class="keypad-btn">9</button>
+                        <button onclick="Core.pressKey('clear')" class="keypad-btn text-red-500 text-lg"><i class="fa-solid fa-eraser"></i></button>
+                        <button onclick="Core.pressKey('0')" class="keypad-btn">0</button>
+                        <button onclick="Core.pressKey('backspace')" class="keypad-btn text-yellow-500 text-lg"><i class="fa-solid fa-delete-left"></i></button>
+                    </div>
+
+                    <!-- BOTÓN DE ENVÍO -->
+                    <button onclick="Core.submitDni()" class="bg-yellow-500 text-black font-black p-5 rounded-2xl w-full uppercase text-xs tracking-widest hover:bg-white transition shadow-xl font-black">SOLICITAR QR</button>
+                </div>
+
+                <!-- GLOBO TRIDIMENSIONAL INICIAL -->
+                <div id="globe-box" class="mt-4"></div>
+            </div>
+
+            <!-- STEP 3: TICKET FINAL (PASES DE ASIENTO ASEGURADO / PARADO) -->
+            <div id="step-3" class="hidden-section animate-fade-up text-center w-full">
+                <div class="ticket-tech">
+                    <div class="tech-header">
+                        <h2>MOVILIDAD UNIVERSITARIA   RUTA VENTANILLA</h2>
+                        <p>TICKET DIGITAL - UNAC</p>
+                    </div>
+                    <div class="p-8">
+                        <p class="text-[10px] font-black text-red-600 uppercase tracking-[4px] mb-1">Fecha de Caducidad:</p>
+                        <p id="t-fecha" class="text-sm font-black text-black uppercase mb-6"></p>
+                        
+                        <div class="bg-gray-100 border-4 border-dashed border-gray-300 rounded-[50px] py-10 mb-8 relative px-4">
+                            <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Estado de Cola (UNAC)</p>
+                            <!-- ESTADO DE ASIENTO O PARADO -->
+                            <div id="seat-area" class="asiento-display">--</div>
+                        </div>
+
+                        <!-- MENSAJE DINÁMICO DEL DELEGADO -->
+                        <p id="delegate-warning" class="text-[10px] font-black text-gray-500 uppercase mb-6 italic leading-relaxed"></p>
+                        
+                        <div class="flex justify-center mb-8">
+                            <div id="qrcode-vip" class="p-6 border-4 border-black rounded-[40px] shadow-2xl bg-white"></div>
+                        </div>
+                        
+                        <div class="data-grid space-y-2">
+                            <div class="flex justify-between text-[11px] border-b border-gray-300 pb-2"><span>PASAJERO:</span> <span id="t-nom" class="font-bold text-black"></span></div>
+                            <div class="flex justify-between text-[11px] border-b border-gray-300 pb-2"><span>DOCUMENTO DNI:</span> <span id="t-dni" class="font-bold text-black"></span></div>
+                            <div class="turno-box">
+                                <span>Turno Seleccionado</span>
+                                <span id="t-turno-val">TARDE</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- GLOBO TRIDIMENSIONAL TICKET -->
+                <div id="globe-box-2" class="mt-4"></div>
+            </div>
+
+        </main>
+
+        <!-- FOOTER E IDENTIFICACIÓN DEL CREADOR -->
+        <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/40 mt-10 relative z-20">
+            <span class="text-center text-[10px] font-bold tracking-[8px] text-yellow-500 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
+            <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light">© 2026 UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
+        </footer>
+    </div>
+
+    <script>
+        function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxaeAc2nq7iEeiLejvja3lKGwR4E09QS4",
+            authDomain: "movilidad-unac.firebaseapp.com",
+            databaseURL: "https://movilidad-unac-default-rtdb.firebaseio.com",
+            projectId: "movilidad-unac",
+            storageBucket: "movilidad-unac.firebasestorage.app",
+            messagingSenderId: "245380540222",
+            appId: "1:245380540222:web:d4ea08b7818bf89d682e6f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // CONTROL SINCRO TURNO TARDE
+        let tardeActivo = false;
+        let typedDni = "";
+
+        // ENDPOINTS ORIGINALES
+        const L1 = "https://script.google.com/macros/s/AKfycbwzVasP01RADjpQeQjULw_XT0ypa1hrB8_Y0OJgMDpXhr7PNMT1nkYQsTjwRr03TaR0Vg/exec";
+        const L2 = "https://script.google.com/macros/s/AKfycbxavrdf_yymc9sdUEYuGz2qWTmzMNz0KQxEtzq6aDXlX8nL7PjXdhxBOvAyMY_jeF73/exec";
+
+        const Core = {
+            alumno: null,
+
+            init: function() {
+                this.initThree('globe-box');
+                this.verificarFiltroSeguridad();
+            },
+
+            // --- PROTOCOLO DE SEGURIDAD AUTO-DETECTABLE COMPATIBLE CON MÓVILES ---
+            verificarFiltroSeguridad: function() {
+                const ref = document.referrer || "";
+                
+                // MÓVILES: Si se navega en la misma pestaña desde ticket.html, history.length será >= 2
+                const tieneHistorialNavegacion = window.history.length > 1;
+
+                // Auto-conceder acceso si viene de ticket.html, index.html o si se detecta navegación interna de pestaña
+                if (ref.includes("ticket.html") || ref.includes("index.html") || tieneHistorialNavegacion) {
+                    sessionStorage.setItem('tarde_access_granted', 'true');
+                }
+
+                const accesoPermitido = sessionStorage.getItem('tarde_access_granted') === 'true';
+
+                // Monitorear base de datos para habilitación/deshabilitación en tiempo real
+                db.ref('horarios/ticket_6pm').on('value', snapshot => {
+                    tardeActivo = !!snapshot.val();
+                    
+                    // Bloquear únicamente si no cumple los criterios de navegación o si el delegado apagó el botón
+                    if (!tardeActivo || !accesoPermitido) {
+                        document.getElementById('blocking-overlay').style.display = 'flex';
+                    } else {
+                        document.getElementById('blocking-overlay').style.display = 'none';
+                    }
+                }, error => {
+                    console.error("Falla al conectar con base de datos:", error);
+                    if (!accesoPermitido) {
+                        document.getElementById('blocking-overlay').style.display = 'flex';
+                    }
+                });
+            },
+
+            // --- FUNCIONAMIENTO DE TECLADO NUMÉRICO INTERNO ---
+            pressKey: function(key) {
+                if (key === 'clear') {
+                    typedDni = "";
+                } else if (key === 'backspace') {
+                    typedDni = typedDni.slice(0, -1);
+                } else {
+                    if (typedDni.length < 8) {
+                        typedDni += key;
+                    }
+                }
+                document.getElementById('dniDisplay').value = typedDni;
+            },
+
+            // --- ENVÍO Y VALIDACIÓN CRUZADA (L1 y L2) ---
+            submitDni: async function() {
+                if(typedDni.length < 8) {
+                    return Swal.fire('Error', 'Debe ingresar un DNI válido de 8 dígitos', 'warning');
+                }
+
+                document.getElementById('scanning-overlay').style.display = 'flex';
+                document.getElementById('loader-msg').innerText = "AUTENTICANDO ALUMNO...";
+
+                try {
+                    // Validar registro en el Link 1 (DNI Alumno)
+                    const resL1 = await fetch(`${L1}?dni=${typedDni}`).then(r => r.json());
+                    if (resL1.found) {
+                        this.alumno = { ...resL1, dni: typedDni };
+                        document.getElementById('loader-msg').innerText = "RESERVANDO ASIENTO...";
+                        
+                        // Encolar solicitud en Link 2
+                        await this.procesarColaTarde();
+                    } else {
+                        document.getElementById('scanning-overlay').style.display = 'none';
+                        Swal.fire('No Registrado', 'Su DNI no figura en el padrón de alumnos.', 'error');
+                    }
+                } catch(e) {
+                    document.getElementById('scanning-overlay').style.display = 'none';
+                    Swal.fire('Falla de Red', 'No se pudo conectar con el servidor central.', 'error');
+                }
+            },
+
+            async procesarColaTarde() {
+                try {
+                    const response = await fetch(`${L2}?dni=${this.alumno.dni}&accion=solicitar_cola&turno=TARDE`);
+                    if(!response.ok) throw new Error("Saturación");
+
+                    const resL2 = await response.json();
+                    this.renderFinalTicket(resL2);
+
+                } catch(err) {
+                    document.getElementById('scanning-overlay').style.display = 'none';
+                    Swal.fire('Servidor Ocupado', 'Reintente de nuevo en un instante.', 'warning');
+                }
+            },
+
+            // --- RENDERIZADO DEL TICKET DE ACUERDO AL ORDEN DE COLA ---
+            renderFinalTicket: function(res) {
+                const area = document.getElementById('seat-area');
+                const warningMsg = document.getElementById('delegate-warning');
+
+                document.getElementById('t-fecha').innerText = new Date().toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
+                document.getElementById('t-nom').innerText = this.alumno.Estudiante;
+                document.getElementById('t-dni').innerText = this.alumno.dni;
+
+                const ordenNum = parseInt(res.orden);
+
+                if (ordenNum <= 40) {
+                    // Mensajes para los primeros 40 de la cola
+                    area.innerHTML = "ASIENTO ASEGURADO";
+                    area.className = "asiento-display text-green-600 text-2xl font-black";
+                    warningMsg.innerText = "Hacer cola. Tendrá asiento pero el orden del asiento se definirá por orden de llegada. El delegado deberá escanear este QR para ser verificado.";
+                } else {
+                    // Mensaje pasado el límite establecido
+                    area.innerHTML = `🧍 PARADO`;
+                    area.className = "asiento-display text-red-600 text-5xl font-black";
+                    warningMsg.innerText = "El límite de asientos ha sido excedido. Viaja parado de manera coordinada. Presentar QR al delegado para su validación.";
+                }
+
+                // Generar código QR UNAC-VIP para validación del delegado
+                document.getElementById('qrcode-vip').innerHTML = "";
+                new QRCode(document.getElementById("qrcode-vip"), { 
+                    text: `UNAC-VIP-${this.alumno.dni}-TARDE`, 
+                    width: 180, 
+                    height: 180 
+                });
+
+                document.getElementById('scanning-overlay').style.display = 'none';
+                document.getElementById('step-1').classList.add('hidden-section');
+                document.getElementById('step-3').classList.remove('hidden-section');
+
+                // Renderizar globo en la vista final del ticket
+                this.initThree('globe-box-2');
+            },
+
+            initThree: function(id) {
+                const container = document.getElementById(id);
+                if(!container) return; container.innerHTML = "";
+                const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                container.appendChild(renderer.domElement);
+                const globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 2), new THREE.MeshBasicMaterial({ color: 0xffc107, wireframe: true, transparent: true, opacity: 0.15 }));
+                scene.add(globe); camera.position.z = 100;
+                const animate = () => { requestAnimationFrame(animate); globe.rotation.y += 0.003; renderer.render(scene, camera); };
+                animate();
+            }
+        };
+
+        window.onload = () => Core.init();
+    </script>
+</body>
+</html>
