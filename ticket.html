@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UNAC | Terminal Oficial de Movilidad v4.0 PRO</title>
+    
+    <!-- LIBRERÍAS EXTERNAS - MANTENIDAS AL 100% -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- FIREBASE COMPAT - CARGA COMPLETA -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <style>
+        /* VARIABLES DE DISEÑO ORIGINALES */
+        :root { 
+            --accent: #ffc107; 
+            --dark: #050505; 
+            --fire: #ff4500; 
+            --white-clean: #f8f9fa; 
+        }
+
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            min-height: 100vh; 
+            background-color: var(--dark); 
+            font-family: 'Inter', sans-serif; 
+            color: #ffffff; 
+            overflow-x: hidden; 
+        }
+
+        /* ANIMACIONES DE ENTRADA */
+        @keyframes fadeInUp { 
+            from { opacity: 0; transform: translateY(30px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
+
+        /* WRAPPER PRINCIPAL CON DISEÑO ORIGINAL */
+        .main-wrapper {
+            position: relative; 
+            z-index: 10;
+            background: radial-gradient(circle at 50% 50%, rgba(20, 20, 20, 0.4) 0%, rgba(5, 5, 5, 1) 100%), 
+                        url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920');
+            background-size: cover; 
+            background-position: center; 
+            background-attachment: fixed;
+            min-height: 100vh; 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column;
+        }
+
+        /* DISEÑO DE NAVEGACIÓN MANTENIDO */
+        header { width: 100%; max-width: 1200px; padding: 30px 20px; z-index: 1000; margin: 0 auto; }
+        .nav-link { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; position: relative; transition: 0.3s; }
+        .nav-link:hover, .active-link { color: var(--accent); }
+        .nav-link::after { content: ''; position: absolute; width: 0; height: 2px; bottom: -6px; left: 0; background: var(--accent); transition: width 0.3s; }
+        .nav-link:hover::after, .active-link::after { width: 100%; }
+
+        #mobile-menu { position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 35px; }
+        #mobile-menu.active { display: flex; }
+
+        /* HUD DE ESCANEO SIN CARGAS FALSAS */
+        #scanning-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.98); 
+            z-index: 9999; display: none; flex-direction: column; 
+            align-items: center; justify-content: center; text-align: center;
+            backdrop-filter: blur(25px); 
+        }
+        .hud-box { width: 320px; height: 320px; border: 2px solid rgba(255, 193, 7, 0.2); position: relative; border-radius: 40px; background: rgba(255,255,255,0.02); }
+        .hud-line { position: absolute; width: 100%; height: 4px; background: var(--accent); top: 0; animation: scanLine 2.5s linear infinite; box-shadow: 0 0 30px var(--accent); }
+        @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
+
+        /* ESTILOS DE TARJETAS MANTENIDOS */
+        .card-panorama { 
+            position: relative; overflow: hidden; border-radius: 35px; 
+            border: 1px solid rgba(255,255,255,0.1); height: 280px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            background-size: cover; background-position: center; transition: 0.4s; cursor: pointer;
+            text-align: center; padding: 20px;
+        }
+        .card-panorama::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.7); z-index: 1; }
+        .card-panorama.locked { filter: grayscale(1) opacity(0.5); pointer-events: none; }
+        .shift-title { position: relative; z-index: 2; font-family: 'Montserrat'; font-weight: 900; font-style: italic; font-size: 35px; text-transform: uppercase; }
+        
+        .time-badge { 
+            position: relative; z-index: 2; background: white; color: black; 
+            padding: 5px 20px; border-radius: 10px; font-weight: 900; 
+            font-size: 12px; margin: 10px 0; box-shadow: 0 5px 15px rgba(255,255,255,0.2);
+        }
+        .delegate-msg { position: relative; z-index: 2; font-size: 9px; color: #aaa; text-transform: uppercase; font-weight: 700; max-width: 200px; margin-top: 10px; line-height: 1.4; }
+
+        /* TICKET DIGITAL MANTENIDO AL 100% */
+        .ticket-tech { 
+            background: #ffffff; color: #000; border-radius: 50px; width: 100%; max-width: 440px; 
+            margin: 0 auto; overflow: hidden; box-shadow: 0 60px 150px rgba(0,0,0,0.9);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .tech-header { background: #000; color: #fff; padding: 30px; text-align: center; border-bottom: 6px solid var(--accent); }
+        .asiento-display { font-family: 'Montserrat'; font-size: 110px; font-weight: 900; color: #e11d48; line-height: 1; margin: 20px 0; }
+        .data-grid { background: #f1f1f1; padding: 25px; border-radius: 30px; margin: 0 25px 25px; text-align: left; font-family: 'Share Tech Mono', monospace; }
+        .turno-box { background: #000; color: var(--accent); padding: 15px; border-radius: 20px; font-weight: 900; text-transform: uppercase; font-size: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* INPUT PROFESIONAL */
+        .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,193,7,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; transition: 0.3s; }
+
+        @media (max-width: 768px) { 
+            .nav-desktop { display: none; } 
+            h1 { font-size: 3rem !important; } 
+            header { padding: 20px; }
+            .input-tech { font-size: 1.2rem; padding: 15px; }
+            .card-panorama { height: 240px; }
+            .shift-title { font-size: 28px; }
+            .asiento-display { font-size: 80px; }
+        }
+
+        .hidden-section { display: none !important; }
+        #globe-box, #globe-box-2 { width: 100%; height: 320px; pointer-events: none; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <!-- HUD DE ESCANEO REFORZADO -->
+    <div id="scanning-overlay">
+        <div class="hud-box">
+            <div class="hud-line"></div>
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-8">
+                <i class="fa-solid fa-dna text-6xl text-yellow-500/40 mb-6 animate-pulse"></i>
+                <p id="loader-msg" class="font-mono text-[11px] tracking-[5px] text-yellow-500 uppercase font-black">Sincronizando</p>
+                <div class="mt-10 w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-yellow-500 w-full transition-all"></div>
+                </div>
+            </div>
+        </div>
+        <p class="text-[9px] text-gray-500 font-bold uppercase mt-6 tracking-[6px]">Terminal de Seguridad Activa</p>
+    </div>
+
+    <!-- MENÚ MÓVIL ORIGINAL -->
+    <div id="mobile-menu">
+        <button onclick="toggleMenu()" class="absolute top-10 right-10 text-yellow-500 text-4xl"><i class="fa-solid fa-xmark"></i></button>
+        <a href="index.html" class="text-xl font-black uppercase tracking-[4px] text-white">Inicio</a>
+        <a href="rutas.html" class="text-xl font-black uppercase tracking-[4px] text-white">Rutas</a>
+        <a href="ticket.html" class="text-xl font-black uppercase tracking-[4px] text-yellow-500 underline">Ticket</a>
+        <a href="registro.html" class="text-xl font-black uppercase tracking-[4px] text-white">Registro</a>
+        <a href="noticias.html" class="text-xl font-black uppercase tracking-[4px] text-white">Noticias</a>
+        <a href="contacto.html" class="text-xl font-black uppercase tracking-[4px] text-white">Contacto</a>
+    </div>
+
+    <div class="main-wrapper">
+        <header class="flex justify-between items-center relative z-20 animate-fade-up">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-yellow-500 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-bus text-black text-lg"></i></div>
+                <div class="flex flex-col text-left leading-none uppercase">
+                    <span class="text-[10px] font-black tracking-widest leading-none">UNAC</span>
+                    <span class="text-[9px] text-yellow-500 font-bold">Movilidad</span>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-8 nav-desktop">
+                <a href="index.html" class="nav-link">Inicio</a>
+                <a href="rutas.html" class="nav-link">Rutas</a>
+                <a href="ticket.html" class="nav-link active-link">Ticket</a>
+                <a href="registro.html" class="nav-link">Registro</a>
+                <a href="noticias.html" class="nav-link">Noticias</a>
+                <a href="contacto.html" class="nav-link">Contacto</a>
+            </nav>
+            <button onclick="toggleMenu()" class="md:hidden bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2">
+                MENU <i class="fa-solid fa-bars-staggered"></i>
+            </button>
+        </header>
+
+        <main class="max-w-6xl mx-auto px-6 py-8 w-full flex-grow z-20">
+            
+            <!-- STEP 1: VERIFICACIÓN -->
+            <div id="step-1" class="text-center animate-fade-up">
+                <h1 class="text-5xl md:text-6xl font-black uppercase italic tracking-tighter mb-4 leading-none">Tickets <span class="text-yellow-500">Oficiales</span></h1>
+                <p class="text-gray-400 text-[11px] uppercase tracking-[3px] max-w-xl mx-auto mb-10 font-bold leading-relaxed">
+                    Movilidad Universitaria - Ruta Ventanilla. Sistema oficial de pases digitales para un traslado seguro e organizado. <span class="text-yellow-500">reserva tu asiento y viaja cómodo, bajo la coordinación de la ruta</span>.
+                </p>
+                
+                <div class="max-w-xs mx-auto space-y-6">
+                    <input type="text" id="dniInput" class="input-tech" placeholder="INGRESE DNI" maxlength="8">
+                    <button onclick="Core.startScan()" class="bg-yellow-500 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-xl">Verificar Alumno</button>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <a href="lista.html" target="_blank" class="bg-white/5 border border-white/10 p-4 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-black transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-list-ul"></i> Lista de HOY
+                        </a>
+                        <a href="tutorial.html" class="bg-white/5 border border-white/10 p-4 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-black transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> Tutorial
+                        </a>
+                    </div>
+
+                    <div id="globe-box"></div>
+                    
+                    <a href="AccesoDelegados.html" target="_blank" class="flex items-center justify-center gap-3 text-[10px] font-black text-gray-600 hover:text-yellow-500 transition uppercase tracking-widest mt-6">
+                        <i class="fa-solid fa-user-shield text-lg"></i> Acceso Restringido Delegados
+                    </a>
+                </div>
+            </div>
+
+            <!-- STEP 2: SELECCIÓN DE TURNO SINCRO -->
+            <div id="step-2" class="hidden-section animate-fade-up">
+                <div class="bg-white/5 border border-white/10 p-8 rounded-[40px] mb-8 border-l-8 border-l-yellow-500 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8">
+                    <div class="flex items-center gap-6">
+                        <div class="w-24 h-24 bg-yellow-500 rounded-[30px] flex items-center justify-center text-black text-5xl shadow-2xl"><i class="fa-solid fa-user-check"></i></div>
+                        <div>
+                            <h2 id="userName" class="text-3xl font-black uppercase italic leading-none"></h2>
+                            <p id="userFac" class="text-yellow-500 text-[11px] font-black mt-3 tracking-[5px] uppercase"></p>
+                            <p class="text-[9px] text-gray-500 font-mono mt-2">DNI: <span id="userDni" class="text-white"></span> | SESIÓN: <span class="text-green-500 font-black">SINCRO ACTIVA</span></p>
+                        </div>
+                    </div>
+                    <div class="text-center md:text-right bg-black/40 p-5 rounded-3xl border border-white/5 min-w-[200px]">
+                        <p class="text-[9px] text-gray-500 font-black uppercase mb-1 tracking-widest">Sincronización Hoy</p>
+                        <div class="text-4xl font-black text-yellow-500" id="total-requests">00</div>
+                        <p class="text-[8px] text-gray-500 font-bold uppercase mt-1 italic">Solicitudes procesadas</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div id="card-m" class="card-panorama" style="background-image: url('DSC07555-768x432.jpg');" onclick="Core.requestTicket('MAÑANA')">
+                        <span id="badge-m" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2"></span>
+                        <h3 class="shift-title text-white">Mañana</h3>
+                        <div class="time-badge">SALIDA: 05:15 AM</div>
+                        <p class="delegate-msg">Apertura automática de sistema</p>
+                    </div>
+                    <!-- TARJETA TARDE MODIFICADA PARA REDIRIGIR ÚNICAMENTE A TARDE.HTML -->
+                    <div id="card-t" class="card-panorama" style="background-image: url('DSC07588-768x432.jpg');" onclick="Core.goToTarde()">
+                        <span id="badge-t" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2"></span>
+                        <h3 class="shift-title text-white">Tarde</h3>
+                        <div class="time-badge">SALIDA: 06:00 PM</div>
+                        <p class="delegate-msg">Activación Sincronizada Delegado</p>
+                    </div>
+                </div>
+                <div id="card-n" class="card-panorama w-full" style="background-image: url('DSC07629-768x432.jpg');" onclick="Core.requestTicket('NOCHE')">
+                    <span id="badge-n" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2"></span>
+                    <h3 class="shift-title text-white text-5xl">Noche</h3>
+                    <div class="time-badge">SALIDA: 10:15 PM</div>
+                    <p class="delegate-msg">Activación Sincronizada Delegado</p>
+                </div>
+
+                <div id="globe-box-2"></div>
+            </div>
+
+            <!-- STEP 3: TICKET FINAL -->
+            <div id="step-3" class="hidden-section animate-fade-up text-center">
+                <div class="ticket-tech">
+                    <div class="tech-header">
+                        <h2>MOVILIDAD UNIVERSITARIA   RUTA VENTANILLA</h2>
+                        <p>TICKET DIGITAL - UNAC</p>
+                    </div>
+                    <div class="p-8">
+                        <p class="text-[10px] font-black text-red-600 uppercase tracking-[4px] mb-1">Fecha de Caducidad:</p>
+                        <p id="t-fecha" class="text-sm font-black text-black uppercase mb-6"></p>
+                        
+                        <div class="bg-gray-100 border-4 border-dashed border-gray-300 rounded-[50px] py-10 mb-8 relative">
+                            <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">NÚMERO DE ASIENTO</p>
+                            <div id="seat-area" class="asiento-display">--</div>
+                        </div>
+
+                        <p class="text-[10px] font-black text-gray-500 uppercase mb-6 italic">Acerque este QR al delegado para ser escaneado <br> y verificado antes de subir a la unidad.</p>
+                        
+                        <div class="flex justify-center mb-8">
+                            <div id="qrcode-vip" class="p-6 border-4 border-black rounded-[40px] shadow-2xl bg-white"></div>
+                        </div>
+                        
+                        <div class="data-grid space-y-2">
+                            <div class="flex justify-between text-[11px] border-b border-gray-300 pb-2"><span>PASAJERO:</span> <span id="t-nom" class="font-bold text-black"></span></div>
+                            <div class="flex justify-between text-[11px] border-b border-gray-300 pb-2"><span>DOCUMENTO DNI:</span> <span id="t-dni" class="font-bold text-black"></span></div>
+                            <div class="turno-box">
+                                <span>Turno Seleccionado</span>
+                                <span id="t-turno-val"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/40 mt-10 relative z-20">
+            <span class="text-center text-[10px] font-bold tracking-[8px] text-yellow-500 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
+            <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light">© 2026 UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
+        </footer>
+    </div>
+
+    <!-- SCRIPTS DE ALTA DISPONIBILIDAD -->
+    <script>
+        function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxaeAc2nq7iEeiLejvja3lKGwR4E09QS4",
+            authDomain: "movilidad-unac.firebaseapp.com",
+            databaseURL: "https://movilidad-unac-default-rtdb.firebaseio.com",
+            projectId: "movilidad-unac",
+            storageBucket: "movilidad-unac.firebasestorage.app",
+            messagingSenderId: "245380540222",
+            appId: "1:245380540222:web:d4ea08b7818bf89d682e6f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Variables de Control Sincronizadas
+        let tardeActivo = false;
+        let nocheActivo = false;
+
+        // ENDPOINTS ORIGINALES
+        const L1 = "https://script.google.com/macros/s/AKfycbwzVasP01RADjpQeQjULw_XT0ypa1hrB8_Y0OJgMDpXhr7PNMT1nkYQsTjwRr03TaR0Vg/exec";
+        const L2 = "https://script.google.com/macros/s/AKfycbxavrdf_yymc9sdUEYuGz2qWTmzMNz0KQxEtzq6aDXlX8nL7PjXdhxBOvAyMY_jeF73/exec";
+
+        const Core = {
+            alumno: null,
+
+            init: function() {
+                this.initThree('globe-box');
+                this.listenToFirebase(); // ACTIVACIÓN INSTANTÁNEA POR PUSH
+                this.updateGlobalCounter();
+                setInterval(() => this.updateGlobalCounter(), 10000);
+            },
+
+            // --- ESCUCHA FIREBASE REFORZADA ---
+            listenToFirebase: function() {
+                // Sincronización estricta del Turno Tarde (6pm)
+                db.ref('horarios/ticket_6pm').on('value', snapshot => {
+                    tardeActivo = !!snapshot.val();
+                    this.refreshUIStatus();
+                }, error => {
+                    console.error("Error de lectura en Firebase (Tarde):", error);
+                });
+
+                // Sincronización estricta del Turno Noche (10:15pm)
+                db.ref('horarios/ticket_1015pm').on('value', snapshot => {
+                    nocheActivo = !!snapshot.val();
+                    this.refreshUIStatus();
+                }, error => {
+                    console.error("Error de lectura en Firebase (Noche):", error);
+                });
+
+                // Control preventivo de red para asegurar sincronización en reconexión móvil
+                db.ref('.info/connected').on('value', snapshot => {
+                    if (snapshot.val() === true) {
+                        this.refreshUIStatus();
+                    }
+                });
+            },
+
+            refreshUIStatus: function() {
+                const h = new Date().getHours();
+                const mañanaActiva = (h >= 21 || h < 7);
+                
+                const updateCard = (badgeId, cardId, isActive) => {
+                    const badge = document.getElementById(badgeId);
+                    const card = document.getElementById(cardId);
+                    if(!badge || !card) return;
+
+                    if(isActive) {
+                        badge.innerText = "ACTIVO";
+                        badge.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 bg-green-500 shadow-lg animate-pulse";
+                        card.classList.remove('locked');
+                    } else {
+                        badge.innerText = "INACTIVO";
+                        badge.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 bg-red-600";
+                        card.classList.add('locked');
+                    }
+                };
+
+                updateCard('badge-m', 'card-m', mañanaActiva);
+                updateCard('badge-t', 'card-t', tardeActivo);
+                updateCard('badge-n', 'card-n', nocheActivo);
+            },
+
+            // Método para redirección exclusiva del Turno Tarde
+            goToTarde: function() {
+                if(tardeActivo) {
+                    window.location.href = "tarde1234.html";
+                }
+            },
+
+            startScan: async function() {
+                const dni = document.getElementById('dniInput').value.trim();
+                if(dni.length < 8) return Swal.fire('Error', 'DNI incompleto', 'warning');
+                
+                document.getElementById('scanning-overlay').style.display = 'flex';
+                document.getElementById('loader-msg').innerText = "CONEXIÓN SERVIDOR CENTRAL...";
+                
+                try {
+                    const res = await fetch(`${L1}?dni=${dni}`).then(r => r.json());
+                    if(res.found) {
+                        this.alumno = { ...res, dni };
+                        document.getElementById('scanning-overlay').style.display = 'none';
+                        document.getElementById('step-1').classList.add('hidden-section');
+                        document.getElementById('step-2').classList.remove('hidden-section');
+                        document.getElementById('userName').innerText = res.Estudiante;
+                        document.getElementById('userFac').innerText = res.Facultad;
+                        document.getElementById('userDni').innerText = dni;
+                        this.initThree('globe-box-2');
+                        this.refreshUIStatus();
+                    } else {
+                        document.getElementById('scanning-overlay').style.display = 'none';
+                        Swal.fire('No registrado', 'Tu DNI no figura en el sistema oficial.', 'error');
+                    }
+                } catch(e) { 
+                    document.getElementById('scanning-overlay').style.display = 'none';
+                    Swal.fire('Error de Red', 'Problemas de conexión.', 'error');
+                }
+            },
+
+            async updateGlobalCounter() {
+                try {
+                    const r = await fetch(`${L2}?accion=obtener_total`).then(r => r.json());
+                    document.getElementById('total-requests').innerText = r.total.toString().padStart(2, '0');
+                } catch(e) {}
+            },
+
+            // --- LÓGICA DE ALTO RENDIMIENTO PARA 50+ ALUMNOS ---
+            requestTicket: async function(turno) {
+                document.getElementById('scanning-overlay').style.display = 'flex';
+                document.getElementById('loader-msg').innerText = "PROCESANDO COLA DE ASIENTOS...";
+                
+                // 1. Escalonamiento Milimétrico (Jitter)
+                const delay = Math.random() * 1200; 
+                await new Promise(resolve => setTimeout(resolve, delay));
+
+                this.dispatchTicketRequest(turno, 0); // Intento 0
+            },
+
+            async dispatchTicketRequest(turno, attempt) {
+                const area = document.getElementById('seat-area');
+                try {
+                    const url = `${L2}?dni=${this.alumno.dni}&accion=solicitar_cola&turno=${turno}`;
+                    const response = await fetch(url);
+                    
+                    if(!response.ok) throw new Error("Saturación");
+
+                    const res = await response.json();
+                    
+                    // Procesar éxito
+                    this.renderFinalTicket(turno, res);
+
+                } catch(error) {
+                    // 2. Sistema de Reintento con Retroceso
+                    if(attempt < 5) {
+                        const nextAttempt = attempt + 1;
+                        document.getElementById('loader-msg').innerText = `SISTEMA OCUPADO... REINTENTANDO (${nextAttempt})`;
+                        setTimeout(() => this.dispatchTicketRequest(turno, nextAttempt), 2000);
+                    } else {
+                        document.getElementById('scanning-overlay').style.display = 'none';
+                        Swal.fire('Servidor Saturado', 'Hay demasiados alumnos ingresando. Por favor, intenta de nuevo.', 'warning');
+                    }
+                }
+            },
+
+            renderFinalTicket: function(turno, res) {
+                const area = document.getElementById('seat-area');
+                document.getElementById('t-fecha').innerText = new Date().toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
+                document.getElementById('t-nom').innerText = this.alumno.Estudiante;
+                document.getElementById('t-dni').innerText = this.alumno.dni;
+                document.getElementById('t-turno-val').innerText = turno;
+
+                if(turno === 'MAÑANA') {
+                    area.innerHTML = '✅ <br> <span class="text-xl block font-black uppercase tracking-widest mt-2">(Ingreso Libre)</span>';
+                } else {
+                    const ordenNum = parseInt(res.orden);
+                    if(ordenNum <= 45) {
+                        area.innerText = res.orden.toString().padStart(2, '0');
+                    } else {
+                        area.innerHTML = `🧍 <span class="text-xl block font-black">(Parado)</span>`;
+                    }
+                }
+
+                document.getElementById('qrcode-vip').innerHTML = "";
+                new QRCode(document.getElementById("qrcode-vip"), { text: `UNAC-VIP-${this.alumno.dni}-${turno}`, width: 180, height: 180 });
+                
+                document.getElementById('scanning-overlay').style.display = 'none';
+                document.getElementById('step-2').classList.add('hidden-section');
+                document.getElementById('step-3').classList.remove('hidden-section');
+            },
+
+            initThree: function(id) {
+                const container = document.getElementById(id);
+                if(!container) return; container.innerHTML = "";
+                const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                container.appendChild(renderer.domElement);
+                const globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 2), new THREE.MeshBasicMaterial({ color: 0xffc107, wireframe: true, transparent: true, opacity: 0.15 }));
+                scene.add(globe); camera.position.z = 100;
+                const animate = () => { requestAnimationFrame(animate); globe.rotation.y += 0.003; renderer.render(scene, camera); };
+                animate();
+            }
+        };
+
+        window.onload = () => Core.init();
+    </script>
+</body>
+</html>
