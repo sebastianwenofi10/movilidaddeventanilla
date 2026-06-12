@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UNAC | Capacitación Interactiva Profesional</title>
+    
+    <!-- Librerías Externas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- Fuentes e Íconos -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Inter:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <style>
+        :root { --accent: #ffc107; --dark: #050505; --dark-glass: rgba(10, 10, 10, 0.9); }
+        body, html { margin: 0; padding: 0; min-height: 100vh; background-color: var(--dark); font-family: 'Inter', sans-serif; color: #ffffff; overflow-x: hidden; }
+        
+        .main-wrapper { 
+            position: relative; z-index: 10; 
+            background: radial-gradient(circle at 50% 50%, rgba(20, 20, 20, 0.6) 0%, rgba(5, 5, 5, 1) 100%), url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920'); 
+            background-size: cover; background-position: center; background-attachment: fixed; min-height: 100vh; width: 100%; 
+            display: flex; flex-direction: column; padding-bottom: 120px; 
+        }
+
+        /* BOTÓN REGRESAR FIJO (SIEMPRE VISIBLE) */
+        .btn-return-fixed { 
+            position: fixed; top: 20px; right: 20px; z-index: 999999; 
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(0, 0, 0, 0.8); border: 1px solid rgba(255, 193, 7, 0.5); color: #fff; 
+            padding: 10px 20px; border-radius: 50px; font-size: 11px; font-weight: 800; 
+            text-transform: uppercase; letter-spacing: 1px; backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); transition: 0.3s;
+        }
+        .btn-return-fixed:hover { background: var(--accent); color: #000; }
+
+        header { width: 100%; max-width: 1200px; padding: 25px; z-index: 1000; margin: 0 auto; }
+        .glass { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); transition: 0.4s; }
+        
+        input[type="text"] { width: 100%; max-width: 400px; padding: 18px; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 193, 7, 0.5); color: #fff; border-radius: 10px; font-size: 1.2rem; text-align: center; outline: none; transition: 0.3s; }
+        .btn-search { background: var(--accent); color: #000; padding: 16px 40px; border-radius: 10px; font-weight: 900; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; width: 100%; max-width: 400px; border: none; transition: 0.3s; }
+        
+        .card-panorama { position: relative; overflow: hidden; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-size: cover; background-position: center; transition: transform 0.3s, border-color 0.3s; }
+        .card-m-img { background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=800'); }
+        .card-t-img { background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=800'); }
+        .highlight-card { border-color: var(--accent) !important; transform: scale(1.05); box-shadow: 0 0 30px rgba(255,193,7,0.3); z-index: 50; }
+        
+        /* TICKET ORIGINAL VIP RESTAURADO */
+        .vip-ticket-card { background: #ffffff; color: #333; border-radius: 15px; width: 100%; max-width: 420px; margin: 0 auto; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6); text-align: center; }
+        .vip-header { background: linear-gradient(to right, #d4a017, #f7d358, #d4a017); padding: 25px 10px; color: #111; }
+        .vip-header h2 { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 24px; letter-spacing: 1px; }
+        .ticket-body { padding: 25px; }
+        .ticket-main-box { border: 1px dashed #d4a017; border-radius: 10px; padding: 20px; background: #fafafa; }
+        .valid-date { font-size: 24px; font-weight: 900; color: #d4a017; font-family: 'Montserrat', sans-serif;}
+        .asiento-num-big { font-family: 'Montserrat', sans-serif; font-size: 80px; font-weight: 900; color: #e53e3e; line-height: 1; margin: 10px 0; }
+        .qr-wrapper { border: 2px solid #d4a017; display: inline-block; padding: 10px; background: #fff; margin: 15px 0; border-radius: 10px; }
+        .data-table { width: 100%; margin-top: 25px; border: 1px solid #eee; border-radius: 8px; font-size: 10px; text-align: left; background: #fff;}
+        .data-table td { padding: 10px 12px; border-bottom: 1px solid #eee; font-weight: 800; text-transform: uppercase; color: #444; }
+
+        /* REPRODUCTOR MEDIA PREMIUM */
+        #media-player-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--dark-glass); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; z-index: 100000; }
+        #progress-container { width: 100%; height: 5px; background: rgba(255,255,255,0.1); }
+        #progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s linear; position: relative; }
+        #progress-fill::after { content: ''; position: absolute; right: -5px; top: -2px; width: 10px; height: 10px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px rgba(255,193,7,0.8); }
+        .player-controls { display: flex; align-items: center; justify-content: space-between; padding: 15px 40px; }
+        .v-btn { color: #fff; font-size: 24px; cursor: pointer; transition: 0.2s; }
+        .v-btn:hover { color: var(--accent); transform: scale(1.1); }
+        #subtitle-box { flex-grow: 1; text-align: center; font-size: 1.15rem; font-weight: 600; letter-spacing: 0.5px; color: #fff; padding: 0 20px; font-family: 'Inter', sans-serif; text-shadow: 0 2px 10px rgba(0,0,0,1); }
+
+        /* CURSOR VIRTUAL INTELIGENTE */
+        #virtual-cursor { 
+            position: fixed; width: 35px; height: 35px; 
+            background: rgba(255, 193, 7, 0.4); border: 3px solid #ffc107; 
+            border-radius: 50%; pointer-events: none; z-index: 999999; 
+            transition: top 0.8s cubic-bezier(0.25, 1, 0.5, 1), left 0.8s cubic-bezier(0.25, 1, 0.5, 1); 
+            display: none; box-shadow: 0 0 20px rgba(255,193,7,0.6);
+        }
+        .clicking { animation: clickPulse 0.4s ease-out; }
+        @keyframes clickPulse { 0% { transform: scale(1); background: rgba(255,193,7,0.8); } 50% { transform: scale(0.6); } 100% { transform: scale(2); opacity: 0; } }
+
+        /* SIMULADOR DE ESCÁNER PROFESIONAL */
+        #scanner-simulator { position: fixed; inset: 0; background: rgba(5,5,5,0.95); z-index: 90000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .scanner-frame { width: 250px; height: 250px; border: 4px solid rgba(255,255,255,0.2); position: relative; border-radius: 20px; overflow: hidden; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; }
+        .scanner-corners::before, .scanner-corners::after { content: ''; position: absolute; width: 40px; height: 40px; border: 4px solid var(--accent); }
+        .scanner-corners::before { top: -4px; left: -4px; border-right: none; border-bottom: none; border-radius: 20px 0 0 0; }
+        .scanner-corners::after { bottom: -4px; right: -4px; border-left: none; border-top: none; border-radius: 0 0 20px 0; }
+        .laser-line { position: absolute; width: 100%; height: 3px; background: red; box-shadow: 0 0 15px red; top: 0; animation: scanAnim 1.5s infinite linear; display: none; }
+        @keyframes scanAnim { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        
+        .scan-result { display: flex; align-items: center; gap: 15px; padding: 20px 40px; border-radius: 15px; font-weight: 900; font-size: 24px; text-transform: uppercase; margin-top: 30px; opacity: 0; transform: translateY(20px); transition: 0.4s; border: 2px solid transparent; }
+        .result-show { opacity: 1; transform: translateY(0); }
+        .res-valid { background: rgba(16,185,129,0.1); color: #10b981; border-color: #10b981; box-shadow: 0 0 30px rgba(16,185,129,0.3); }
+        .res-error { background: rgba(239,68,68,0.1); color: #ef4444; border-color: #ef4444; box-shadow: 0 0 30px rgba(239,68,68,0.3); }
+
+        #errorModal, #loading-screen { position: fixed; inset: 0; z-index: 90000; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.95); }
+        #loading-screen { flex-direction: column; background: #050505; }
+        #loader-3d-canvas { width: 100%; height: 40vh; }
+        #globe-container { width: 100%; height: 250px; pointer-events: none; position: relative; opacity: 0.5; margin-top: auto; }
+        .hidden-section { display: none !important; }
+
+        @media (max-width: 768px) {
+            .btn-return-fixed { top: 15px; right: 15px; font-size: 9px; padding: 10px 15px; }
+            .player-controls { flex-direction: column; gap: 15px; padding: 15px; }
+            #subtitle-box { order: -1; font-size: 0.95rem; }
+            .asiento-num-big { font-size: 60px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BOTÓN REGRESAR -->
+    <a href="ticket.html" class="btn-return-fixed">
+        <i class="fa-solid fa-arrow-left"></i> <span>Regresar a Tickets</span>
+    </a>
+
+    <!-- PUNTERO VIRTUAL -->
+    <div id="virtual-cursor"></div>
+
+    <!-- PANTALLA SIMULACIÓN ESCÁNER -->
+    <div id="scanner-simulator">
+        <h3 class="text-gray-400 font-bold uppercase tracking-[4px] mb-8 text-sm">Simulador de Control de Abordaje</h3>
+        <div class="scanner-frame">
+            <div class="scanner-corners"></div>
+            <i class="fa-solid fa-qrcode text-8xl text-white/20"></i>
+            <div class="laser-line" id="scan-laser"></div>
+        </div>
+        <div class="scan-result" id="scan-result-box">
+            <i id="scan-icon" class="fa-solid fa-circle-check"></i>
+            <span id="scan-text">Validando...</span>
+        </div>
+    </div>
+
+    <!-- LOADER 3D -->
+    <div id="loading-screen">
+        <div id="loader-3d-canvas"></div>
+        <p class="text-yellow-500 font-black uppercase tracking-[4px] text-sm mt-6 animate-pulse">Asegurando Asiento VIP</p>
+        <p class="text-gray-500 font-bold uppercase tracking-[2px] text-[10px] mt-2">Sincronizando con servidor central (10s)</p>
+    </div>
+
+    <!-- MODAL ERROR -->
+    <div id="errorModal">
+        <div class="glass p-10 text-center max-w-md border-t-4 border-red-500">
+            <i class="fa-solid fa-triangle-exclamation text-red-500 text-6xl mb-6 shadow-[0_0_20px_rgba(239,68,68,0.5)] rounded-full"></i>
+            <h2 class="text-white text-3xl font-black uppercase mb-4 tracking-tighter">No Verificado</h2>
+            <p class="text-gray-400 text-sm leading-relaxed">Su DNI no está registrado en el padrón oficial. Debe registrarse previamente para acceder.</p>
+        </div>
+    </div>
+
+    <div class="main-wrapper">
+        <header class="flex justify-between items-center relative z-20">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-yellow-500 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-chalkboard-user text-black text-lg"></i></div>
+                <div class="flex flex-col text-left leading-none uppercase">
+                    <span class="text-[12px] font-black tracking-widest text-white">UNAC</span>
+                    <span class="text-[10px] text-yellow-500 font-bold">Capacitación</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-4xl mx-auto px-4 py-6 flex flex-col items-center w-full relative z-20">
+            <div id="main-header" class="text-center mb-8">
+                <h1 class="text-4xl md:text-5xl font-black uppercase tracking-tighter text-white">Tutorial <span class="text-yellow-500 italic">Maestro</span></h1>
+            </div>
+
+            <!-- PASO 1 -->
+            <div id="step-verify" class="glass p-8 w-full max-w-md mx-auto text-center mb-8">
+                <p class="text-[11px] text-gray-400 uppercase font-bold mb-6 tracking-widest">Ingrese su DNI para habilitar sistema</p>
+                <input type="text" id="dniInput" placeholder="DOCUMENTO DNI" maxlength="8">
+                <div class="mt-6 flex justify-center"><button class="btn-search" id="verifyBtn">Verificar Alumno</button></div>
+            </div>
+
+            <!-- PASO 2 -->
+            <div id="step-selection" class="w-full max-w-4xl hidden-section">
+                <div class="glass p-6 mb-8 flex items-center gap-4 border-l-4 border-yellow-500">
+                    <div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-yellow-500 text-xl border border-white/10"><i class="fa-solid fa-user-check"></i></div>
+                    <div class="text-left">
+                        <h2 class="text-xl font-black uppercase leading-none text-white italic">ALUMNO DEMOSTRATIVO</h2>
+                        <span class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-[9px] font-black uppercase mt-2 inline-block border border-green-500/50">Habilitado - Apto</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div id="card-mañana" class="card-panorama card-m-img">
+                        <span class="bg-red-500 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase mb-2 shadow-lg">Cerrado</span>
+                        <div class="text-3xl font-black uppercase italic text-white text-shadow-md">Mañana</div>
+                        <p class="text-[10px] text-yellow-400 font-black mt-2 bg-black/50 px-3 py-1 rounded">SALIDA: 05:15 AM</p>
+                    </div>
+                    <div id="card-tarde" class="card-panorama card-t-img">
+                        <span class="bg-green-500 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase mb-2 shadow-lg">Abierto</span>
+                        <div class="text-3xl font-black uppercase italic text-white text-shadow-md">Tarde</div>
+                        <p class="text-[10px] text-yellow-400 font-black mt-2 bg-black/50 px-3 py-1 rounded">SALIDA: 06:00 PM</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 3 -->
+            <div id="step-ticket" class="w-full max-w-lg hidden-section">
+                <div class="vip-ticket-card">
+                    <div class="vip-header"><h2>¡PASE VIP VERIFICADO!</h2></div>
+                    <div class="ticket-body">
+                        <p class="text-left text-sm font-bold text-gray-600 mb-4">Hola <strong class="text-black text-lg">ALUMNO</strong>, se te hace entrega de tu ticket digital:</p>
+                        <div class="ticket-main-box">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">VÁLIDO ÚNICAMENTE PARA EL DÍA:</p>
+                            <p class="valid-date" id="t-fecha"></p>
+                            
+                            <div id="area-asiento">
+                                <p class="text-[12px] font-bold text-gray-600 mt-4 uppercase tracking-widest border-t border-dashed border-yellow-500 pt-4">Tu número de asiento es:</p>
+                                <div class="asiento-num-big">15</div>
+                            </div>
+
+                            <div id="area-pie" class="hidden-section pt-4 border-t border-dashed border-yellow-500">
+                                <i class="fa-solid fa-person-walking text-6xl text-gray-400 mb-2 mt-4"></i>
+                                <p class="text-[12px] font-black text-red-600 uppercase tracking-widest mt-2">VIAJE DE PIE<br><span class="text-[9px] text-gray-500">(Cupo excede los 40)</span></p>
+                            </div>
+
+                            <div class="qr-wrapper shadow-lg"><div id="qrcode-tut"></div></div>
+                        </div>
+                        <table class="data-table">
+                            <tr><td class="text-gray-400">ESTUDIANTE:</td><td style="text-align:right">ALUMNO DEMOSTRATIVO</td></tr>
+                            <tr><td class="text-gray-400">DNI:</td><td style="text-align:right">77441122</td></tr>
+                        </table>
+                        <div class="text-yellow-600 text-[10px] font-black mt-4 tracking-widest uppercase">#SIGAMOS_MEJORANDO &nbsp; #UNAC_UNIDO</div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+        
+        <div id="globe-container"></div>
+    </div>
+
+    <!-- REPRODUCTOR -->
+    <div id="media-player-bar">
+        <div id="progress-container"><div id="progress-fill"></div></div>
+        <div class="player-controls">
+            <div class="flex items-center gap-6">
+                <i id="play-pause" class="fa-solid fa-pause v-btn" onclick="togglePlay()" title="Pausar/Reanudar"></i>
+                <i class="fa-solid fa-rotate-left v-btn" style="font-size: 20px;" onclick="resetTutorial()" title="Reiniciar Tutorial"></i>
+            </div>
+            <div id="subtitle-box">Iniciando capacitación profesional. Por favor, active su audio.</div>
+            <div class="hidden md:block w-10"></div>
+        </div>
+    </div>
+
+    <script>
+        let isPlaying = true;
+        let time = 0;
+        let mainTimer;
+        const synth = window.speechSynthesis;
+
+        // GUIÓN EXACTO (Con tiempos en segundos)
+        const script = [
+            { t: 1,  s: "Hola estudiante. Bienvenido al tutorial maestro de la plataforma oficial de movilidad de la UNAC.", f: () => {} },
+            { t: 8,  s: "Paso uno: Verificación de Identidad. El sistema valida su DNI directamente con el padrón oficial.", f: () => {} },
+            { t: 15, s: "Observemos qué sucede al ingresar un documento que no ha realizado su registro previo.", f: actionTypeInvalid },
+            { t: 26, s: "El sistema lanzará una alerta roja bloqueando el acceso. Es obligatorio registrarse antes de usar el sistema.", f: () => {} },
+            { t: 35, s: "Ahora, simularemos un ingreso válido escribiendo el DNI de un alumno habilitado.", f: actionTypeValid },
+            { t: 45, s: "Hablemos de los horarios. Preste mucha atención.", f: () => {} },
+            { t: 50, s: "El turno mañana, se habilita desde las 9 de la noche del día anterior, hasta las 7 de la mañana del mismo día.", f: highlightMañana },
+            { t: 62, s: "Por otro lado, el turno tarde se abre exactamente a las 5 y 10 de la tarde, y se cierra a las 6 en punto.", f: highlightTarde },
+            { t: 73, s: "Al elegir el turno tarde, el sistema procesará sus datos durante exactamente 10 segundos. No cierre la ventana.", f: actionLoad },
+            { t: 84, s: "¡Ticket generado! Si usted se encuentra entre los 40 primeros, obtendrá este número de asiento en rojo para viajar sentado.", f: actionSeated },
+            { t: 96, s: "Pero si el cupo es mayor a 40, el asiento desaparecerá y el ticket indicará que deberá realizar su viaje de pie.", f: actionStanding },
+            { t: 108, s: "Al abordar, el conductor escaneará su código QR. Así se ve un escaneo de acceso válido y autorizado.", f: actionScanValid },
+            { t: 119, s: "El escáner tiene seguridad anti trampas. Detectará inmediatamente si alguien intenta pasar un ticket que ya fue usado.", f: actionScanUsed },
+            { t: 129, s: "Y también bloqueará el acceso si detecta un ticket cuya fecha está caducada o pertenece a días anteriores.", f: actionScanExpired },
+            { t: 139, s: "Tutorial finalizado con éxito. Utilice el botón superior para regresar al sistema y generar su ticket. ¡Buen viaje!", f: () => {} },
+            { t: 149, s: "", f: endAndResetTutorial }
+        ];
+
+        const totalDuration = 149;
+
+        function runTutorial() {
+            if(!isPlaying) return;
+            time++;
+            document.getElementById('progress-fill').style.width = Math.min((time / totalDuration) * 100, 100) + "%";
+            let act = script.find(x => x.t === time);
+            if(act) { act.f(); if(act.s !== "") speak(act.s); }
+            if(time < totalDuration) { mainTimer = setTimeout(runTutorial, 1000); }
+        }
+
+        function speak(text) {
+            synth.cancel();
+            document.getElementById('subtitle-box').innerText = text;
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'es-MX'; utter.rate = 0.95; utter.pitch = 1.0;
+            synth.speak(utter);
+        }
+
+        async function humanType(id, text) {
+            const el = document.getElementById(id); el.value = "";
+            for(let c of text) { el.value += c; await new Promise(r => setTimeout(r, 120)); }
+        }
+
+        function pointAndClick(id, cb) {
+            const el = document.getElementById(id); 
+            const rect = el.getBoundingClientRect();
+            const cur = document.getElementById('virtual-cursor');
+            cur.style.display = 'block'; 
+            cur.classList.remove('clicking');
+            cur.style.left = `${rect.left + rect.width/2 - 17}px`; 
+            cur.style.top = `${rect.top + rect.height/2 - 17}px`;
+            
+            setTimeout(() => {
+                cur.classList.add('clicking');
+                if(cb) setTimeout(cb, 200); 
+            }, 800); 
+        }
+
+        // ACCIONES
+        function actionTypeInvalid() {
+            pointAndClick('dniInput', async () => {
+                await humanType('dniInput', '00000000');
+                pointAndClick('verifyBtn', () => { 
+                    document.getElementById('errorModal').style.display = 'flex'; 
+                    document.getElementById('virtual-cursor').style.display = 'none';
+                });
+            });
+        }
+
+        function actionTypeValid() {
+            document.getElementById('errorModal').style.display = 'none';
+            document.getElementById('dniInput').value = "";
+            pointAndClick('dniInput', async () => {
+                await humanType('dniInput', '77441122');
+                pointAndClick('verifyBtn', () => {
+                    document.getElementById('step-verify').classList.add('hidden-section');
+                    document.getElementById('step-selection').classList.remove('hidden-section');
+                    document.getElementById('virtual-cursor').style.display = 'none';
+                });
+            });
+        }
+
+        function highlightMañana() {
+            document.getElementById('card-mañana').classList.add('highlight-card');
+            pointAndClick('card-mañana');
+        }
+
+        function highlightTarde() {
+            document.getElementById('card-mañana').classList.remove('highlight-card');
+            document.getElementById('card-tarde').classList.add('highlight-card');
+            pointAndClick('card-tarde');
+        }
+
+        function actionLoad() {
+            document.getElementById('virtual-cursor').style.display = 'none';
+            document.getElementById('step-selection').classList.add('hidden-section');
+            document.getElementById('loading-screen').style.display = 'flex';
+            Galaxy3D.init();
+        }
+
+        function actionSeated() {
+            document.getElementById('loading-screen').style.display = 'none';
+            Galaxy3D.stop();
+            document.getElementById('step-ticket').classList.remove('hidden-section');
+            document.getElementById('area-pie').classList.add('hidden-section');
+            document.getElementById('area-asiento').classList.remove('hidden-section');
+            document.getElementById('t-fecha').innerText = new Date().toLocaleDateString('es-PE');
+            document.getElementById('qrcode-tut').innerHTML = "";
+            new QRCode(document.getElementById("qrcode-tut"), { text: "UNAC_VALIDO", width: 140, height: 140 });
+        }
+
+        function actionStanding() {
+            document.getElementById('area-asiento').classList.add('hidden-section');
+            document.getElementById('area-pie').classList.remove('hidden-section');
+        }
+
+        // SIMULADOR DE ESCÁNER
+        function triggerScan(type, text) {
+            const sim = document.getElementById('scanner-simulator');
+            const laser = document.getElementById('scan-laser');
+            const box = document.getElementById('scan-result-box');
+            const icon = document.getElementById('scan-icon');
+            const txt = document.getElementById('scan-text');
+
+            sim.style.display = 'flex';
+            box.className = "scan-result"; // reset
+            txt.innerText = "Validando...";
+            icon.className = "fa-solid fa-spinner fa-spin text-gray-400";
+            laser.style.display = 'block';
+
+            setTimeout(() => {
+                laser.style.display = 'none';
+                box.classList.add('result-show');
+                if(type === 'valid') {
+                    box.classList.add('res-valid');
+                    icon.className = "fa-solid fa-circle-check";
+                    txt.innerText = text;
+                } else {
+                    box.classList.add('res-error');
+                    icon.className = "fa-solid fa-circle-xmark";
+                    txt.innerText = text;
+                }
+            }, 1500); // 1.5s de escaneo
+        }
+
+        function actionScanValid() { triggerScan('valid', 'ACCESO AUTORIZADO'); }
+        function actionScanUsed() { triggerScan('error', 'TICKET YA USADO'); }
+        function actionScanExpired() { triggerScan('error', 'FECHA CADUCADA'); }
+
+        // CONTROLES FINALES
+        function endAndResetTutorial() {
+            clearTimeout(mainTimer);
+            isPlaying = false;
+            time = 0;
+            
+            document.getElementById('scanner-simulator').style.display = 'none';
+            document.getElementById('errorModal').style.display = 'none';
+            document.getElementById('step-ticket').classList.add('hidden-section');
+            document.getElementById('step-selection').classList.add('hidden-section');
+            document.getElementById('step-verify').classList.remove('hidden-section');
+            document.getElementById('card-mañana').classList.remove('highlight-card');
+            document.getElementById('card-tarde').classList.remove('highlight-card');
+            document.getElementById('dniInput').value = "";
+            document.getElementById('virtual-cursor').style.display = 'none';
+            
+            document.getElementById('play-pause').className = "fa-solid fa-play v-btn";
+            document.getElementById('progress-fill').style.width = "0%";
+            document.getElementById('subtitle-box').innerText = "Capacitación finalizada. Presione el botón Play para reiniciar el video.";
+            synth.cancel();
+        }
+
+        function togglePlay() { 
+            isPlaying = !isPlaying; 
+            document.getElementById('play-pause').className = isPlaying ? "fa-solid fa-pause v-btn" : "fa-solid fa-play v-btn"; 
+            if(isPlaying) {
+                if(time === 0) document.getElementById('subtitle-box').innerText = "Reanudando capacitación...";
+                runTutorial(); 
+            } else {
+                synth.cancel(); clearTimeout(mainTimer);
+            }
+        }
+
+        function resetTutorial() { endAndResetTutorial(); setTimeout(() => { togglePlay(); }, 500); }
+
+        // GALAXIA 3D
+        const Galaxy3D = {
+            scene: null, camera: null, renderer: null, particles: null, reqId: null,
+            init: () => {
+                const container = document.getElementById('loader-3d-canvas');
+                container.innerHTML = "";
+                Galaxy3D.scene = new THREE.Scene();
+                Galaxy3D.camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
+                Galaxy3D.camera.position.set(0, 3, 5); Galaxy3D.camera.lookAt(0, 0, 0);
+                Galaxy3D.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                Galaxy3D.renderer.setSize(container.clientWidth, container.clientHeight);
+                container.appendChild(Galaxy3D.renderer.domElement);
+
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(2000 * 3);
+                const colors = new Float32Array(2000 * 3);
+                const colorBase = new THREE.Color(0xffc107);
+
+                for(let i=0; i<2000; i++) {
+                    const i3 = i * 3; const radius = Math.random() * 4; const spinAngle = radius * 1.5;
+                    const branchAngle = ((i % 3) / 3) * Math.PI * 2; 
+                    positions[i3] = Math.cos(branchAngle + spinAngle) * radius + (Math.random()-0.5)*0.8;
+                    positions[i3+1] = (Math.random()-0.5)*0.5;
+                    positions[i3+2] = Math.sin(branchAngle + spinAngle) * radius + (Math.random()-0.5)*0.8;
+                    const mixedColor = colorBase.clone(); mixedColor.lerp(new THREE.Color(0xffffff), 1 - (radius/4));
+                    colors[i3] = mixedColor.r; colors[i3+1] = mixedColor.g; colors[i3+2] = mixedColor.b;
+                }
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                const material = new THREE.PointsMaterial({ size: 0.03, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false });
+                Galaxy3D.particles = new THREE.Points(geometry, material);
+                Galaxy3D.scene.add(Galaxy3D.particles);
+                Galaxy3D.animate();
+            },
+            animate: () => { Galaxy3D.reqId = requestAnimationFrame(Galaxy3D.animate); Galaxy3D.particles.rotation.y += 0.005; Galaxy3D.renderer.render(Galaxy3D.scene, Galaxy3D.camera); },
+            stop: () => { if(Galaxy3D.reqId) cancelAnimationFrame(Galaxy3D.reqId); }
+        };
+
+        function initGlobeThree() {
+            const container = document.getElementById('globe-container');
+            const scene = new THREE.Scene(); const cam = new THREE.PerspectiveCamera(45, container.clientWidth / 250, 0.1, 1000);
+            const ren = new THREE.WebGLRenderer({ antialias: true, alpha: true }); ren.setSize(container.clientWidth, 250); 
+            container.appendChild(ren.domElement);
+            const globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 2), new THREE.MeshBasicMaterial({ color: 0xffc107, wireframe: true, transparent: true, opacity: 0.08 }));
+            scene.add(globe); cam.position.z = 100;
+            function animate() { requestAnimationFrame(animate); globe.rotation.y += 0.002; ren.render(scene, cam); } animate();
+        }
+
+        window.onload = () => { initGlobeThree(); mainTimer = setTimeout(runTutorial, 1500); };
+    </script>
+</body>
+</html>
