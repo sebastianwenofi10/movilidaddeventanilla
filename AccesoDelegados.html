@@ -128,14 +128,19 @@
             <div id="reader"></div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 mb-4 text-center">
-            <div class="glass p-4 border-b-2 border-yellow-500">
-                <span class="text-[8px] text-gray-500 uppercase font-black block mb-1">Mis Escaneos</span>
-                <span id="contador" class="text-3xl font-black text-yellow-500">0</span>
+        <!-- CONTADORES TRI-COLUMNA -->
+        <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+            <div class="glass p-3 border-b-2 border-yellow-500">
+                <span class="text-[7px] text-gray-500 uppercase font-black block mb-1">Mis Escaneos</span>
+                <span id="contador" class="text-2xl font-black text-yellow-500">0</span>
             </div>
-            <div class="glass p-4 border-b-2 border-blue-500 relative">
-                <span class="text-[8px] text-gray-500 uppercase font-black block mb-1">Total Global</span>
-                <span id="contador-global" class="text-3xl font-black text-blue-500">0</span>
+            <div class="glass p-3 border-b-2 border-orange-500">
+                <span class="text-[7px] text-gray-500 uppercase font-black block mb-1">Solicitados</span>
+                <span id="contador-solicitados" class="text-2xl font-black text-orange-500">0</span>
+            </div>
+            <div class="glass p-3 border-b-2 border-blue-500 relative">
+                <span class="text-[7px] text-gray-500 uppercase font-black block mb-1">Total Global</span>
+                <span id="contador-global" class="text-2xl font-black text-blue-500">0</span>
             </div>
         </div>
 
@@ -166,7 +171,6 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN DE LINKS
         const L1 = "https://script.google.com/macros/s/AKfycbwzVasP01RADjpQeQjULw_XT0ypa1hrB8_Y0OJgMDpXhr7PNMT1nkYQsTjwRr03TaR0Vg/exec";
         const L2 = "https://script.google.com/macros/s/AKfycbxavrdf_yymc9sdUEYuGz2qWTmzMNz0KQxEtzq6aDXlX8nL7PjXdhxBOvAyMY_jeF73/exec";
         const L3 = "https://script.google.com/macros/s/AKfycbxg1tayTgW5rVS_lBmUbzztg7XQALXsYln6-RZaISFqoFayxs43WIF7PO9ctrRaPpFy/exec"; 
@@ -183,14 +187,13 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Audios para feedback instantáneo
         const soundOk = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         const soundError = new Audio('https://www.soundjay.com/buttons/beep-05.mp3');
 
         let status6pm = false, status1015pm = false;
         let scannedData = JSON.parse(localStorage.getItem('scanned_unac')) || [];
         let delegadoActivo = "", isScanningLocked = false;
-        const DELEGADOS = ["71886034", "77570731", "63229248", "73438294"];
+        const DELEGADOS = ["71886034", "77570731", "63229248", "73438294", "73671194"];
 
         db.ref('horarios/ticket_6pm').on('value', snap => {
             status6pm = snap.val();
@@ -225,7 +228,11 @@
         function iniciarSistema() {
             renderList();
             actualizarTotalGlobal();
-            setInterval(actualizarTotalGlobal, 15000);
+            actualizarTotalSolicitados(); // Carga inicial Solicitados (L2)
+            setInterval(() => {
+                actualizarTotalGlobal();
+                actualizarTotalSolicitados();
+            }, 15000);
             const scanner = new Html5QrcodeScanner("reader", { fps: 30, qrbox: 250 });
             scanner.render(onScanSuccess);
         }
@@ -244,23 +251,18 @@
             const dniAlumno = parts[2];
             const turnoTicket = parts[3];
 
-            // 1. VALIDACIÓN LOCAL (INSTANTÁNEA)
             if (scannedData.some(item => item.dni === dniAlumno)) {
                 notificarFlash("YA REGISTRADO", false);
                 setTimeout(() => isScanningLocked = false, 1500);
                 return;
             }
 
-            // 2. PROCESO DE VALIDACIÓN OPTIMIZADO
             try {
-                // Consultamos Link 2 y Link 3 en paralelo para ahorrar tiempo
                 const [resL2] = await Promise.all([
                     fetch(`${L2}?dni=${dniAlumno}&accion=solicitar_cola&turno=${turnoTicket}`).then(r => r.json())
                 ]);
 
                 if (resL2.status === "EXISTENTE" || resL2.status === "OK") {
-                    // Si el ticket es válido, registramos asistencia de inmediato
-                    // No esperamos a L1 (nombre) para mostrar el éxito, usamos el DNI temporalmente
                     notificarFlash("VERIFICADO ✅", true);
                     soundOk.play();
 
@@ -268,8 +270,6 @@
                     scannedData.push(nuevoRegistro);
                     localStorage.setItem('scanned_unac', JSON.stringify(scannedData));
                     renderList();
-
-                    // Ejecutamos en segundo plano (background) la actualización de nombre y la marca en L3
                     actualizarEnBackground(dniAlumno);
                     
                 } else {
@@ -279,13 +279,11 @@
                 notificarFlash("ERROR DE RED", false);
             }
             
-            // Bloqueo corto de 1.5s para agilizar el flujo de cola
             setTimeout(() => isScanningLocked = false, 1500);
         }
 
         async function actualizarEnBackground(dni) {
             try {
-                // Marcar asistencia y obtener nombre al mismo tiempo
                 const [resL1] = await Promise.all([
                     fetch(`${L1}?dni=${dni}`).then(r => r.json()),
                     fetch(`${L3}?dni=${dni}&accion=marcar_asistencia&delegado=${delegadoActivo}`)
@@ -300,6 +298,7 @@
                     }
                 }
                 actualizarTotalGlobal();
+                actualizarTotalSolicitados();
             } catch (e) {}
         }
 
@@ -308,6 +307,15 @@
                 const response = await fetch(`${L3}?accion=obtener_total`);
                 const data = await response.json();
                 document.getElementById('contador-global').innerText = data.total || 0;
+            } catch (e) {}
+        }
+
+        // NUEVA FUNCIÓN PARA SINCRONIZAR CON LINK 2
+        async function actualizarTotalSolicitados() {
+            try {
+                const response = await fetch(`${L2}?accion=obtener_total`);
+                const data = await response.json();
+                document.getElementById('contador-solicitados').innerText = data.total || 0;
             } catch (e) {}
         }
 
