@@ -193,7 +193,7 @@
         let status6pm = false, status1015pm = false;
         let scannedData = JSON.parse(localStorage.getItem('scanned_unac')) || [];
         let delegadoActivo = "", isScanningLocked = false;
-        const DELEGADOS = ["71886034", "77570731", "63229248", "73438294", "73671194"];
+        const DELEGADOS = ["71886034", "77570731", "63229248", "73438294", "70694926"];
 
         db.ref('horarios/ticket_6pm').on('value', snap => {
             status6pm = snap.val();
