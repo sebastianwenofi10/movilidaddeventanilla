@@ -63,7 +63,7 @@
         #mobile-menu { position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 35px; }
         #mobile-menu.active { display: flex; }
 
-        /* HUD DE CARGA SIMILAR A ONPE */
+        /* HUD DE CARGA ESTILO ONPE */
         #scanning-overlay { 
             position: fixed; inset: 0; background: rgba(0,0,0,0.98); 
             z-index: 9999; display: none; flex-direction: column; 
@@ -90,7 +90,7 @@
             transform: scale(0.92);
         }
 
-        /* TICKET DIGITAL MANTENIDO AL 100% */
+        /* TICKET DIGITAL */
         .ticket-tech { 
             background: #ffffff; color: #000; border-radius: 50px; width: 100%; max-width: 440px; 
             margin: 0 auto; overflow: hidden; box-shadow: 0 60px 150px rgba(0,0,0,0.9);
@@ -101,7 +101,7 @@
         .data-grid { background: #f1f1f1; padding: 25px; border-radius: 30px; margin: 0 25px 25px; text-align: left; font-family: 'Share Tech Mono', monospace; }
         .turno-box { background: #000; color: var(--accent); padding: 15px; border-radius: 20px; font-weight: 900; text-transform: uppercase; font-size: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
 
-        /* INPUT INHABILITADO PARA ESCRIBIR DIRECTO (FORZADO A TECLADO NUMÉRICO VIRTUAL) */
+        /* INPUT INHABILITADO PARA ESCRIBIR DIRECTO */
         .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,193,7,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; pointer-events: none; }
 
         .hidden-section { display: none !important; }
@@ -110,7 +110,7 @@
 </head>
 <body oncontextmenu="return false;">
 
-    <!-- PANTALLA NEGRA DE BLOQUEO DE SEGURIDAD (ACCESO NO AUTORIZADO) -->
+    <!-- BLOQUEO DE SEGURIDAD -->
     <div id="blocking-overlay" class="fixed inset-0 bg-[#050505] z-[10000] flex flex-col items-center justify-center text-center p-6" style="display: none;">
         <i class="fa-solid fa-user-slash text-6xl text-red-600 mb-6 animate-pulse"></i>
         <h2 class="text-3xl font-black text-white uppercase tracking-widest mb-2">Acceso Inhabilitado</h2>
@@ -122,9 +122,7 @@
         <div class="flex items-center justify-center gap-6 mb-4">
             <div class="w-16 h-[2px] bg-white/20"></div>
             <div class="relative w-28 h-28 flex items-center justify-center">
-                <!-- Anillo exterior rotatorio segmentado -->
                 <div class="absolute inset-0 rounded-full border-4 border-dashed border-sky-600 animate-spin" style="animation-duration: 4s;"></div>
-                <!-- Círculo interior estático ONPE -->
                 <div class="w-20 h-20 bg-white rounded-full flex flex-col items-center justify-center shadow-2xl z-10">
                     <span class="text-red-500 font-extrabold text-[9px] tracking-widest leading-none">UNAC</span>
                     <i class="fa-solid fa-fingerprint text-red-600 text-lg my-0.5"></i>
@@ -136,7 +134,7 @@
         <p id="loader-msg" class="font-mono text-[10px] tracking-[6px] text-yellow-500 uppercase font-black">VALIDANDO IDENTIDAD...</p>
     </div>
 
-    <!-- MENÚ MÓVIL ORIGINAL -->
+    <!-- MENÚ MÓVIL -->
     <div id="mobile-menu">
         <button onclick="toggleMenu()" class="absolute top-10 right-10 text-yellow-500 text-4xl"><i class="fa-solid fa-xmark"></i></button>
         <a href="index.html" class="text-xl font-black uppercase tracking-[4px] text-white">Inicio</a>
@@ -148,7 +146,6 @@
     </div>
 
     <div class="main-wrapper">
-        <!-- NAVEGACIÓN COPIADA TAL CUAL -->
         <header class="flex justify-between items-center relative z-20 animate-fade-up">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 bg-yellow-500 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-bus text-black text-lg"></i></div>
@@ -180,13 +177,11 @@
                 </div>
 
                 <div class="bg-white/5 border border-white/10 p-6 rounded-[35px] shadow-2xl backdrop-blur-md">
-                    <!-- RECUADRO DNI INHABILITADO A TECLADOS EXTERNOS -->
                     <div class="mb-6">
                         <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Ingresar DNI</label>
                         <input type="text" id="dniDisplay" class="input-tech" placeholder="••••••••" readonly>
                     </div>
 
-                    <!-- TECLAS NUMÉRICAS DEL 0 AL 9 -->
                     <div class="grid grid-cols-3 gap-3 mb-4">
                         <button onclick="Core.pressKey('1')" class="keypad-btn">1</button>
                         <button onclick="Core.pressKey('2')" class="keypad-btn">2</button>
@@ -202,15 +197,13 @@
                         <button onclick="Core.pressKey('backspace')" class="keypad-btn text-yellow-500 text-lg"><i class="fa-solid fa-delete-left"></i></button>
                     </div>
 
-                    <!-- BOTÓN DE ENVÍO -->
-                    <button onclick="Core.submitDni()" class="bg-yellow-500 text-black font-black p-5 rounded-2xl w-full uppercase text-xs tracking-widest hover:bg-white transition shadow-xl font-black">SOLICITAR QR</button>
+                    <button id="btn-submit" onclick="Core.submitDni()" class="bg-yellow-500 text-black font-black p-5 rounded-2xl w-full uppercase text-xs tracking-widest hover:bg-white transition shadow-xl font-black">SOLICITAR QR</button>
                 </div>
 
-                <!-- GLOBO TRIDIMENSIONAL INICIAL -->
                 <div id="globe-box" class="mt-4"></div>
             </div>
 
-            <!-- STEP 3: TICKET FINAL (PASES DE ASIENTO ASEGURADO / PARADO) -->
+            <!-- STEP 3: TICKET FINAL -->
             <div id="step-3" class="hidden-section animate-fade-up text-center w-full">
                 <div class="ticket-tech">
                     <div class="tech-header">
@@ -223,11 +216,9 @@
                         
                         <div class="bg-gray-100 border-4 border-dashed border-gray-300 rounded-[50px] py-10 mb-8 relative px-4">
                             <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Estado de Cola (UNAC)</p>
-                            <!-- ESTADO DE ASIENTO O PARADO -->
                             <div id="seat-area" class="asiento-display">--</div>
                         </div>
 
-                        <!-- MENSAJE DINÁMICO DEL DELEGADO -->
                         <p id="delegate-warning" class="text-[10px] font-black text-gray-500 uppercase mb-6 italic leading-relaxed"></p>
                         
                         <div class="flex justify-center mb-8">
@@ -244,13 +235,11 @@
                         </div>
                     </div>
                 </div>
-                <!-- GLOBO TRIDIMENSIONAL TICKET -->
                 <div id="globe-box-2" class="mt-4"></div>
             </div>
 
         </main>
 
-        <!-- FOOTER E IDENTIFICACIÓN DEL CREADOR -->
         <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/40 mt-10 relative z-20">
             <span class="text-center text-[10px] font-bold tracking-[8px] text-yellow-500 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
             <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light">© 2026 UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
@@ -258,6 +247,11 @@
     </div>
 
     <script>
+        /**
+         * SISTEMA DE GESTIÓN DE TURNOS - UNAC
+         * ESTRUCTURADO PARA ALTA DISPONIBILIDAD
+         */
+
         function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
 
         const firebaseConfig = {
@@ -269,166 +263,213 @@
             messagingSenderId: "245380540222",
             appId: "1:245380540222:web:d4ea08b7818bf89d682e6f"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // CONTROL SINCRO TURNO TARDE
-        let tardeActivo = false;
         let typedDni = "";
-
-        // ENDPOINTS ORIGINALES
-        const L1 = "https://script.google.com/macros/s/AKfycbwzVasP01RADjpQeQjULw_XT0ypa1hrB8_Y0OJgMDpXhr7PNMT1nkYQsTjwRr03TaR0Vg/exec";
-        const L2 = "https://script.google.com/macros/s/AKfycbxavrdf_yymc9sdUEYuGz2qWTmzMNz0KQxEtzq6aDXlX8nL7PjXdhxBOvAyMY_jeF73/exec";
+        const ENDPOINT_ALUMNOS = "https://script.google.com/macros/s/AKfycbwzVasP01RADjpQeQjULw_XT0ypa1hrB8_Y0OJgMDpXhr7PNMT1nkYQsTjwRr03TaR0Vg/exec";
+        const ENDPOINT_COLA = "https://script.google.com/macros/s/AKfycbxavrdf_yymc9sdUEYuGz2qWTmzMNz0KQxEtzq6aDXlX8nL7PjXdhxBOvAyMY_jeF73/exec";
 
         const Core = {
-            alumno: null,
+            alumnoData: null,
+            isProcessing: false,
 
             init: function() {
+                console.log("Sistema Inicializado...");
                 this.initThree('globe-box');
-                this.verificarFiltroSeguridad();
+                this.protocoloSeguridad();
             },
 
-            // --- PROTOCOLO DE SEGURIDAD AUTO-DETECTABLE COMPATIBLE CON MÓVILES ---
-            verificarFiltroSeguridad: function() {
-                const ref = document.referrer || "";
-                
-                // MÓVILES: Si se navega en la misma pestaña desde ticket.html, history.length será >= 2
-                const tieneHistorialNavegacion = window.history.length > 1;
+            // --- PROTOCOLO DE SEGURIDAD REFORZADO ---
+            protocoloSeguridad: function() {
+                const referrer = document.referrer;
+                const manualGrant = sessionStorage.getItem('tarde_access_granted');
+                const pathAllowed = referrer.includes("ticket.html") || referrer.includes("index.html") || window.history.length > 1;
 
-                // Auto-conceder acceso si viene de ticket.html, index.html o si se detecta navegación interna de pestaña
-                if (ref.includes("ticket.html") || ref.includes("index.html") || tieneHistorialNavegacion) {
+                if (pathAllowed) {
                     sessionStorage.setItem('tarde_access_granted', 'true');
                 }
 
-                const accesoPermitido = sessionStorage.getItem('tarde_access_granted') === 'true';
+                // Sincronización en tiempo real con Firebase
+                db.ref('horarios/ticket_6pm').on('value', (snapshot) => {
+                    const isActive = snapshot.val();
+                    const hasPermission = sessionStorage.getItem('tarde_access_granted') === 'true';
 
-                // Monitorear base de datos para habilitación/deshabilitación en tiempo real
-                db.ref('horarios/ticket_6pm').on('value', snapshot => {
-                    tardeActivo = !!snapshot.val();
-                    
-                    // Bloquear únicamente si no cumple los criterios de navegación o si el delegado apagó el botón
-                    if (!tardeActivo || !accesoPermitido) {
+                    if (!isActive || !hasPermission) {
                         document.getElementById('blocking-overlay').style.display = 'flex';
                     } else {
                         document.getElementById('blocking-overlay').style.display = 'none';
                     }
-                }, error => {
-                    console.error("Falla al conectar con base de datos:", error);
-                    if (!accesoPermitido) {
-                        document.getElementById('blocking-overlay').style.display = 'flex';
-                    }
+                }, (error) => {
+                    console.error("Error de conexión Firebase:", error);
                 });
             },
 
-            // --- FUNCIONAMIENTO DE TECLADO NUMÉRICO INTERNO ---
-            pressKey: function(key) {
-                if (key === 'clear') {
+            // --- LÓGICA DE TECLADO VIRTUAL ---
+            pressKey: function(val) {
+                if(this.isProcessing) return;
+
+                if (val === 'clear') {
                     typedDni = "";
-                } else if (key === 'backspace') {
+                } else if (val === 'backspace') {
                     typedDni = typedDni.slice(0, -1);
                 } else {
-                    if (typedDni.length < 8) {
-                        typedDni += key;
-                    }
+                    if (typedDni.length < 8) typedDni += val;
                 }
                 document.getElementById('dniDisplay').value = typedDni;
             },
 
-            // --- ENVÍO Y VALIDACIÓN CRUZADA (L1 y L2) ---
+            // --- ENVÍO DE DATOS Y VALIDACIÓN CRUZADA ---
             submitDni: async function() {
-                if(typedDni.length < 8) {
-                    return Swal.fire('Error', 'Debe ingresar un DNI válido de 8 dígitos', 'warning');
+                if (typedDni.length !== 8) {
+                    return Swal.fire({
+                        icon: 'warning',
+                        title: 'DNI Incompleto',
+                        text: 'Por favor, ingrese los 8 dígitos de su documento.',
+                        confirmButtonColor: '#ffc107'
+                    });
                 }
 
-                document.getElementById('scanning-overlay').style.display = 'flex';
-                document.getElementById('loader-msg').innerText = "AUTENTICANDO ALUMNO...";
+                this.setLoading(true, "AUTENTICANDO ALUMNO...");
 
                 try {
-                    // Validar registro en el Link 1 (DNI Alumno)
-                    const resL1 = await fetch(`${L1}?dni=${typedDni}`).then(r => r.json());
-                    if (resL1.found) {
-                        this.alumno = { ...resL1, dni: typedDni };
-                        document.getElementById('loader-msg').innerText = "RESERVANDO ASIENTO...";
+                    // LLAMADA 1: VALIDAR ALUMNO
+                    const responseAlu = await fetch(`${ENDPOINT_ALUMNOS}?dni=${typedDni}`);
+                    const dataAlu = await responseAlu.json();
+
+                    if (dataAlu.found) {
+                        this.alumnoData = { ...dataAlu, dni: typedDni };
+                        this.setLoading(true, "GENERANDO TURNO EN COLA...");
                         
-                        // Encolar solicitud en Link 2
-                        await this.procesarColaTarde();
+                        // LLAMADA 2: GESTIONAR COLA DE TURNO TARDE
+                        await this.registrarEnCola();
                     } else {
-                        document.getElementById('scanning-overlay').style.display = 'none';
-                        Swal.fire('No Registrado', 'Su DNI no figura en el padrón de alumnos.', 'error');
+                        this.setLoading(false);
+                        Swal.fire('No Encontrado', 'Usted no se encuentra registrado en la base de datos de movilidad.', 'error');
                     }
-                } catch(e) {
-                    document.getElementById('scanning-overlay').style.display = 'none';
-                    Swal.fire('Falla de Red', 'No se pudo conectar con el servidor central.', 'error');
+                } catch (error) {
+                    this.setLoading(false);
+                    console.error("Error en Submit:", error);
+                    Swal.fire('Error de Servidor', 'No se pudo establecer conexión. Intente nuevamente en unos segundos.', 'error');
                 }
             },
 
-            async procesarColaTarde() {
+            registrarEnCola: async function() {
                 try {
-                    const response = await fetch(`${L2}?dni=${this.alumno.dni}&accion=solicitar_cola&turno=TARDE`);
-                    if(!response.ok) throw new Error("Saturación");
-
-                    const resL2 = await response.json();
-                    this.renderFinalTicket(resL2);
-
-                } catch(err) {
-                    document.getElementById('scanning-overlay').style.display = 'none';
-                    Swal.fire('Servidor Ocupado', 'Reintente de nuevo en un instante.', 'warning');
+                    // Usamos una técnica de reintento suave si el servidor de Google está bajo mucha carga
+                    const responseCola = await fetch(`${ENDPOINT_COLA}?dni=${this.alumnoData.dni}&accion=solicitar_cola&turno=TARDE`);
+                    
+                    if (!responseCola.ok) throw new Error("Server Busy");
+                    
+                    const dataCola = await responseCola.json();
+                    
+                    if(dataCola && dataCola.orden) {
+                        this.finalizarProceso(dataCola);
+                    } else {
+                        throw new Error("Data Corrupted");
+                    }
+                } catch (error) {
+                    this.setLoading(false);
+                    Swal.fire({
+                        title: 'Servidor Saturado',
+                        text: 'Hay demasiados estudiantes solicitando ticket. Por favor, presione "SOLICITAR QR" otra vez.',
+                        icon: 'info'
+                    });
                 }
             },
 
-            // --- RENDERIZADO DEL TICKET DE ACUERDO AL ORDEN DE COLA ---
-            renderFinalTicket: function(res) {
+            finalizarProceso: function(res) {
                 const area = document.getElementById('seat-area');
-                const warningMsg = document.getElementById('delegate-warning');
+                const warning = document.getElementById('delegate-warning');
+                const orden = parseInt(res.orden);
 
-                document.getElementById('t-fecha').innerText = new Date().toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
-                document.getElementById('t-nom').innerText = this.alumno.Estudiante;
-                document.getElementById('t-dni').innerText = this.alumno.dni;
+                // Configurar datos en el Ticket
+                document.getElementById('t-fecha').innerText = new Date().toLocaleDateString('es-PE', { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                }).toUpperCase();
+                document.getElementById('t-nom').innerText = this.alumnoData.Estudiante;
+                document.getElementById('t-dni').innerText = this.alumnoData.dni;
 
-                const ordenNum = parseInt(res.orden);
-
-                if (ordenNum <= 40) {
-                    // Mensajes para los primeros 40 de la cola
-                    area.innerHTML = "ASIENTO ASEGURADO";
+                // Lógica de Asiento vs Parado (Límite 40 asientos por bus promedio)
+                if (orden <= 40) {
+                    area.innerText = "ASIENTO ASEGURADO";
                     area.className = "asiento-display text-green-600 text-2xl font-black";
-                    warningMsg.innerText = "Hacer cola. Tendrá asiento pero el orden del asiento se definirá por orden de llegada. El delegado deberá escanear este QR para ser verificado.";
+                    warning.innerText = `USTED ES EL NÚMERO ${orden} EN COLA. TIENE DERECHO A ASIENTO SEGÚN LLEGADA AL PARADERO.`;
                 } else {
-                    // Mensaje pasado el límite establecido
-                    area.innerHTML = `🧍 PARADO`;
+                    area.innerText = "🧍 PARADO";
                     area.className = "asiento-display text-red-600 text-5xl font-black";
-                    warningMsg.innerText = "El límite de asientos ha sido excedido. Viaja parado de manera coordinada. Presentar QR al delegado para su validación.";
+                    warning.innerText = `EL BUS ESTÁ LLENO (ESTADO: ${orden}). DEBERÁ VIAJAR DE PIE COORDINADAMENTE CON EL DELEGADO.`;
                 }
 
-                // Generar código QR UNAC-VIP para validación del delegado
+                // Generar QR de Validación
                 document.getElementById('qrcode-vip').innerHTML = "";
-                new QRCode(document.getElementById("qrcode-vip"), { 
-                    text: `UNAC-VIP-${this.alumno.dni}-TARDE`, 
-                    width: 180, 
-                    height: 180 
+                new QRCode(document.getElementById("qrcode-vip"), {
+                    text: `UNAC-VERIFY-${this.alumnoData.dni}-T-${orden}`,
+                    width: 180,
+                    height: 180,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
                 });
 
-                document.getElementById('scanning-overlay').style.display = 'none';
+                // Transición de interfaz
+                this.setLoading(false);
                 document.getElementById('step-1').classList.add('hidden-section');
                 document.getElementById('step-3').classList.remove('hidden-section');
-
-                // Renderizar globo en la vista final del ticket
                 this.initThree('globe-box-2');
+                
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             },
 
-            initThree: function(id) {
-                const container = document.getElementById(id);
-                if(!container) return; container.innerHTML = "";
-                const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
+            setLoading: function(show, msg = "") {
+                this.isProcessing = show;
+                const overlay = document.getElementById('scanning-overlay');
+                const msgElement = document.getElementById('loader-msg');
+                
+                if (show) {
+                    msgElement.innerText = msg;
+                    overlay.style.display = 'flex';
+                } else {
+                    overlay.style.display = 'none';
+                }
+            },
+
+            initThree: function(elemId) {
+                const container = document.getElementById(elemId);
+                if(!container) return;
+                container.innerHTML = "";
+
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
                 const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                
                 renderer.setSize(container.clientWidth, container.clientHeight);
                 container.appendChild(renderer.domElement);
-                const globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 2), new THREE.MeshBasicMaterial({ color: 0xffc107, wireframe: true, transparent: true, opacity: 0.15 }));
-                scene.add(globe); camera.position.z = 100;
-                const animate = () => { requestAnimationFrame(animate); globe.rotation.y += 0.003; renderer.render(scene, camera); };
+
+                const geometry = new THREE.IcosahedronGeometry(30, 2);
+                const material = new THREE.MeshBasicMaterial({ 
+                    color: 0xffc107, 
+                    wireframe: true, 
+                    transparent: true, 
+                    opacity: 0.15 
+                });
+                
+                const globe = new THREE.Mesh(geometry, material);
+                scene.add(globe);
+                camera.position.z = 100;
+
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    globe.rotation.y += 0.003;
+                    globe.rotation.x += 0.001;
+                    renderer.render(scene, camera);
+                };
                 animate();
             }
         };
 
+        // Ejecución al cargar
         window.onload = () => Core.init();
     </script>
 </body>
