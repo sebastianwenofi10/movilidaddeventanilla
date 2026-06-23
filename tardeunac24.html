@@ -395,11 +395,11 @@
                 if (orden <= 40) {
                     area.innerText = "ASIENTO ASEGURADO";
                     area.className = "asiento-display text-green-600 text-2xl font-black";
-                    warning.innerText = `USTED ES EL NÚMERO ${orden} EN COLA. TIENE DERECHO A ASIENTO SEGÚN LLEGADA AL PARADERO.`;
+                    warning.innerText = `Hacer cola. Tendrá asiento pero el orden del asiento se definirá por orden de llegada. El delegado deberá escanear este QR para ser verificado.`;
                 } else {
                     area.innerText = "🧍 PARADO";
                     area.className = "asiento-display text-red-600 text-5xl font-black";
-                    warning.innerText = `EL BUS ESTÁ LLENO (ESTADO: ${orden}). DEBERÁ VIAJAR DE PIE COORDINADAMENTE CON EL DELEGADO.`;
+                    warning.innerText = `El límite de asientos ha sido excedido. Viaja parado de manera coordinada. Presentar QR al delegado para su validación.`;
                 }
 
                 // Generar QR de Validación
