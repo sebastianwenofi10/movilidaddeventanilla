@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UNAC | Sincronización Turno Tarde</title>
     
-    <!-- LIBRERÍAS EXTERNAS - MANTENIDAS AL 100% -->
+    <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-    <!-- FIREBASE COMPAT - CARGA COMPLETA -->
+    <!-- FIREBASE COMPAT -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
@@ -90,6 +90,13 @@
             transform: scale(0.92);
         }
 
+        /* ESTILO PARA BOTÓN DESHABILITADO */
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            pointer-events: none;
+        }
+
         /* TICKET DIGITAL */
         .ticket-tech { 
             background: #ffffff; color: #000; border-radius: 50px; width: 100%; max-width: 440px; 
@@ -101,9 +108,7 @@
         .data-grid { background: #f1f1f1; padding: 25px; border-radius: 30px; margin: 0 25px 25px; text-align: left; font-family: 'Share Tech Mono', monospace; }
         .turno-box { background: #000; color: var(--accent); padding: 15px; border-radius: 20px; font-weight: 900; text-transform: uppercase; font-size: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
 
-        /* INPUT INHABILITADO PARA ESCRIBIR DIRECTO */
         .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,193,7,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; pointer-events: none; }
-
         .hidden-section { display: none !important; }
         #globe-box, #globe-box-2 { width: 100%; height: 320px; pointer-events: none; }
     </style>
@@ -131,7 +136,8 @@
             </div>
             <div class="w-16 h-[2px] bg-white/20"></div>
         </div>
-        <p id="loader-msg" class="font-mono text-[10px] tracking-[6px] text-yellow-500 uppercase font-black">VALIDANDO IDENTIDAD...</p>
+        <p id="loader-msg" class="font-mono text-[10px] tracking-[6px] text-yellow-500 uppercase font-black text-center px-4">VALIDANDO IDENTIDAD...</p>
+        <p id="loader-submsg" class="font-mono text-[8px] tracking-[2px] text-gray-400 mt-2 uppercase text-center px-4"></p>
     </div>
 
     <!-- MENÚ MÓVIL -->
@@ -197,7 +203,7 @@
                         <button onclick="Core.pressKey('backspace')" class="keypad-btn text-yellow-500 text-lg"><i class="fa-solid fa-delete-left"></i></button>
                     </div>
 
-                    <button id="btn-submit" onclick="Core.submitDni()" class="bg-yellow-500 text-black font-black p-5 rounded-2xl w-full uppercase text-xs tracking-widest hover:bg-white transition shadow-xl font-black">SOLICITAR QR</button>
+                    <button id="btn-submit" onclick="Core.submitDni()" class="bg-yellow-500 text-black font-black p-5 rounded-2xl w-full uppercase text-xs tracking-widest hover:bg-white transition shadow-xl">SOLICITAR QR</button>
                 </div>
 
                 <div id="globe-box" class="mt-4"></div>
@@ -207,7 +213,7 @@
             <div id="step-3" class="hidden-section animate-fade-up text-center w-full">
                 <div class="ticket-tech">
                     <div class="tech-header">
-                        <h2>MOVILIDAD UNIVERSITARIA   RUTA VENTANILLA</h2>
+                        <h2>MOVILIDAD UNIVERSITARIA RUTA VENTANILLA</h2>
                         <p>TICKET DIGITAL - UNAC</p>
                     </div>
                     <div class="p-8">
@@ -228,6 +234,9 @@
                         <div class="data-grid space-y-2">
                             <div class="flex justify-between text-[11px] border-b border-gray-300 pb-2"><span>PASAJERO:</span> <span id="t-nom" class="font-bold text-black"></span></div>
                             <div class="flex justify-between text-[11px] border-b border-gray-300 pb-2"><span>DOCUMENTO DNI:</span> <span id="t-dni" class="font-bold text-black"></span></div>
+                            <!-- SE AGREGÓ LA HORA AQUÍ ABAJO -->
+                            <div class="flex justify-between text-[11px] border-b border-gray-300 pb-2"><span>HORA DE EMISIÓN:</span> <span id="t-hora" class="font-bold text-blue-700"></span></div>
+                            
                             <div class="turno-box">
                                 <span>Turno Seleccionado</span>
                                 <span id="t-turno-val">TARDE</span>
@@ -239,7 +248,7 @@
             </div>
 
         </main>
-
+        
         <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/40 mt-10 relative z-20">
             <span class="text-center text-[10px] font-bold tracking-[8px] text-yellow-500 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
             <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light">© 2026 UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
@@ -247,11 +256,6 @@
     </div>
 
     <script>
-        /**
-         * SISTEMA DE GESTIÓN DE TURNOS - UNAC
-         * ESTRUCTURADO PARA ALTA DISPONIBILIDAD
-         */
-
         function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
 
         const firebaseConfig = {
@@ -276,22 +280,18 @@
             isProcessing: false,
 
             init: function() {
-                console.log("Sistema Inicializado...");
                 this.initThree('globe-box');
                 this.protocoloSeguridad();
             },
 
-            // --- PROTOCOLO DE SEGURIDAD REFORZADO ---
             protocoloSeguridad: function() {
                 const referrer = document.referrer;
-                const manualGrant = sessionStorage.getItem('tarde_access_granted');
                 const pathAllowed = referrer.includes("ticket.html") || referrer.includes("index.html") || window.history.length > 1;
 
                 if (pathAllowed) {
                     sessionStorage.setItem('tarde_access_granted', 'true');
                 }
 
-                // Sincronización en tiempo real con Firebase
                 db.ref('horarios/ticket_6pm').on('value', (snapshot) => {
                     const isActive = snapshot.val();
                     const hasPermission = sessionStorage.getItem('tarde_access_granted') === 'true';
@@ -301,12 +301,9 @@
                     } else {
                         document.getElementById('blocking-overlay').style.display = 'none';
                     }
-                }, (error) => {
-                    console.error("Error de conexión Firebase:", error);
                 });
             },
 
-            // --- LÓGICA DE TECLADO VIRTUAL ---
             pressKey: function(val) {
                 if(this.isProcessing) return;
 
@@ -320,63 +317,88 @@
                 document.getElementById('dniDisplay').value = typedDni;
             },
 
-            // --- ENVÍO DE DATOS Y VALIDACIÓN CRUZADA ---
+            // FUNCIÓN DE FETCH CON REINTENTOS Y TIMEOUT (ANTISATURACIÓN)
+            fetchWithRetryAndTimeout: async function(url, retries = 3, delay = 1500) {
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const controller = new AbortController();
+                        const id = setTimeout(() => controller.abort(), 8000); // 8 segundos max por intento
+                        
+                        const response = await fetch(url, { signal: controller.signal });
+                        clearTimeout(id);
+
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const data = await response.json();
+                        return data;
+                    } catch (error) {
+                        console.warn(`Intento ${i + 1} fallido. Razón: ${error.message}`);
+                        if (i === retries - 1) throw error; // Si es el último intento, arroja el error
+                        
+                        this.setLoading(true, "RED SATURADA", `Reintentando conexión... (${i + 1}/${retries})`);
+                        // Espera exponencial: 1.5s, 3s, 4.5s
+                        await new Promise(res => setTimeout(res, delay * (i + 1))); 
+                    }
+                }
+            },
+
             submitDni: async function() {
                 if (typedDni.length !== 8) {
-                    return Swal.fire({
-                        icon: 'warning',
-                        title: 'DNI Incompleto',
-                        text: 'Por favor, ingrese los 8 dígitos de su documento.',
-                        confirmButtonColor: '#ffc107'
-                    });
+                    return Swal.fire({ icon: 'warning', title: 'DNI Incompleto', text: 'Ingrese los 8 dígitos.' });
                 }
 
-                this.setLoading(true, "AUTENTICANDO ALUMNO...");
+                // BLOQUEO DE INTERFAZ: Evitar múltiples clics
+                this.isProcessing = true;
+                const btnSubmit = document.getElementById('btn-submit');
+                btnSubmit.classList.add('btn-disabled');
+                btnSubmit.innerText = "PROCESANDO...";
+
+                this.setLoading(true, "AUTENTICANDO ALUMNO...", "Verificando base de datos matriculada");
 
                 try {
-                    // LLAMADA 1: VALIDAR ALUMNO
-                    const responseAlu = await fetch(`${ENDPOINT_ALUMNOS}?dni=${typedDni}`);
-                    const dataAlu = await responseAlu.json();
+                    // Llamada 1 con protección anti-saturación
+                    const dataAlu = await this.fetchWithRetryAndTimeout(`${ENDPOINT_ALUMNOS}?dni=${typedDni}`);
 
-                    if (dataAlu.found) {
+                    if (dataAlu && dataAlu.found) {
                         this.alumnoData = { ...dataAlu, dni: typedDni };
-                        this.setLoading(true, "GENERANDO TURNO EN COLA...");
+                        this.setLoading(true, "GENERANDO TURNO...", "Pidiendo cupo en el servidor. No cierre la pestaña.");
                         
-                        // LLAMADA 2: GESTIONAR COLA DE TURNO TARDE
                         await this.registrarEnCola();
                     } else {
-                        this.setLoading(false);
-                        Swal.fire('No Encontrado', 'Usted no se encuentra registrado en la base de datos de movilidad.', 'error');
+                        this.resetUI();
+                        Swal.fire('No Encontrado', 'No se encuentra registrado en la base de movilidad.', 'error');
                     }
                 } catch (error) {
-                    this.setLoading(false);
-                    console.error("Error en Submit:", error);
-                    Swal.fire('Error de Servidor', 'No se pudo establecer conexión. Intente nuevamente en unos segundos.', 'error');
+                    this.resetUI();
+                    Swal.fire('Servidores Ocupados', 'Muchos alumnos intentando ingresar a la vez. Por favor, vuelve a presionar Solicitar QR en 5 segundos.', 'warning');
                 }
             },
 
             registrarEnCola: async function() {
                 try {
-                    // Usamos una técnica de reintento suave si el servidor de Google está bajo mucha carga
-                    const responseCola = await fetch(`${ENDPOINT_COLA}?dni=${this.alumnoData.dni}&accion=solicitar_cola&turno=TARDE`);
-                    
-                    if (!responseCola.ok) throw new Error("Server Busy");
-                    
-                    const dataCola = await responseCola.json();
+                    // Llamada 2 con protección anti-saturación (Máximo 4 intentos si hay cuellos de botella)
+                    const dataCola = await this.fetchWithRetryAndTimeout(`${ENDPOINT_COLA}?dni=${this.alumnoData.dni}&accion=solicitar_cola&turno=TARDE`, 4, 2000);
                     
                     if(dataCola && dataCola.orden) {
                         this.finalizarProceso(dataCola);
                     } else {
-                        throw new Error("Data Corrupted");
+                        throw new Error("Datos corruptos");
                     }
                 } catch (error) {
-                    this.setLoading(false);
+                    this.resetUI();
                     Swal.fire({
-                        title: 'Servidor Saturado',
-                        text: 'Hay demasiados estudiantes solicitando ticket. Por favor, presione "SOLICITAR QR" otra vez.',
+                        title: 'Alta demanda en el sistema',
+                        text: 'El servidor de colas está procesando demasiadas solicitudes. Espera unos segundos y dale a Solicitar de nuevo.',
                         icon: 'info'
                     });
                 }
+            },
+
+            resetUI: function() {
+                this.setLoading(false);
+                this.isProcessing = false;
+                const btnSubmit = document.getElementById('btn-submit');
+                btnSubmit.classList.remove('btn-disabled');
+                btnSubmit.innerText = "SOLICITAR QR";
             },
 
             finalizarProceso: function(res) {
@@ -384,51 +406,57 @@
                 const warning = document.getElementById('delegate-warning');
                 const orden = parseInt(res.orden);
 
-                // Configurar datos en el Ticket
-                document.getElementById('t-fecha').innerText = new Date().toLocaleDateString('es-PE', { 
+                // OBTENCIÓN DE FECHA Y HORA ACTUAL
+                const now = new Date();
+                
+                // Formatear Fecha
+                document.getElementById('t-fecha').innerText = now.toLocaleDateString('es-PE', { 
                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
                 }).toUpperCase();
+
+                // Formatear Hora (Ej: 06:15:30 PM)
+                const horaEmision = now.toLocaleTimeString('es-PE', {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+                }).toUpperCase();
+                
+                // Asignar Datos Visuales
+                document.getElementById('t-hora').innerText = horaEmision;
                 document.getElementById('t-nom').innerText = this.alumnoData.Estudiante;
                 document.getElementById('t-dni').innerText = this.alumnoData.dni;
 
-                // Lógica de Asiento vs Parado (Límite 40 asientos por bus promedio)
                 if (orden <= 40) {
                     area.innerText = "ASIENTO ASEGURADO";
                     area.className = "asiento-display text-green-600 text-2xl font-black";
-                    warning.innerText = `Hacer cola. Tendrá asiento pero el orden del asiento se definirá por orden de llegada. El delegado deberá escanear este QR para ser verificado.`;
+                    warning.innerText = `Turno: #${orden}. Hacer cola. El orden de asiento se definirá por orden de llegada.`;
                 } else {
                     area.innerText = "🧍 PARADO";
                     area.className = "asiento-display text-red-600 text-5xl font-black";
-                    warning.innerText = `El límite de asientos ha sido excedido. Viaja parado de manera coordinada. Presentar QR al delegado para su validación.`;
+                    warning.innerText = `Turno #${orden}. El límite de asientos ha sido excedido. Viaja parado de manera coordinada.`;
                 }
 
-                // Generar QR de Validación
                 document.getElementById('qrcode-vip').innerHTML = "";
                 new QRCode(document.getElementById("qrcode-vip"), {
                     text: `UNAC-VERIFY-${this.alumnoData.dni}-T-${orden}`,
-                    width: 180,
-                    height: 180,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
+                    width: 180, height: 180,
+                    colorDark : "#000000", colorLight : "#ffffff",
                     correctLevel : QRCode.CorrectLevel.H
                 });
 
-                // Transición de interfaz
                 this.setLoading(false);
                 document.getElementById('step-1').classList.add('hidden-section');
                 document.getElementById('step-3').classList.remove('hidden-section');
                 this.initThree('globe-box-2');
-                
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             },
 
-            setLoading: function(show, msg = "") {
-                this.isProcessing = show;
+            setLoading: function(show, msg = "", submsg = "") {
                 const overlay = document.getElementById('scanning-overlay');
                 const msgElement = document.getElementById('loader-msg');
+                const subMsgElement = document.getElementById('loader-submsg');
                 
                 if (show) {
                     msgElement.innerText = msg;
+                    subMsgElement.innerText = submsg;
                     overlay.style.display = 'flex';
                 } else {
                     overlay.style.display = 'none';
@@ -449,10 +477,7 @@
 
                 const geometry = new THREE.IcosahedronGeometry(30, 2);
                 const material = new THREE.MeshBasicMaterial({ 
-                    color: 0xffc107, 
-                    wireframe: true, 
-                    transparent: true, 
-                    opacity: 0.15 
+                    color: 0xffc107, wireframe: true, transparent: true, opacity: 0.15 
                 });
                 
                 const globe = new THREE.Mesh(geometry, material);
@@ -469,7 +494,6 @@
             }
         };
 
-        // Ejecución al cargar
         window.onload = () => Core.init();
     </script>
 </body>
