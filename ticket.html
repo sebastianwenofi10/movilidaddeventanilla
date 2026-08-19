@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UNAC | Terminal Oficial de Movilidad</title>
+    <title>UNAC | Sistema de Votación</title>
     
-    <!-- LIBRERÍAS EXTERNAS - MANTENIDAS AL 100% -->
+    <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -23,27 +22,45 @@
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
         
+        /* HUD DE CARGA AVANZADO */
         #scanning-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; backdrop-filter: blur(25px); }
         .hud-box { width: 320px; height: 320px; border: 2px solid rgba(255, 193, 7, 0.2); position: relative; border-radius: 40px; background: rgba(255,255,255,0.02); overflow: hidden; }
         .hud-line { position: absolute; width: 100%; height: 4px; background: var(--accent); top: 0; animation: scanLine 2.5s linear infinite; box-shadow: 0 0 30px var(--accent); }
         @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
 
+        /* DISEÑO ORIGINAL */
         .main-wrapper { position: relative; z-index: 10; background: radial-gradient(circle at 50% 50%, rgba(20, 20, 20, 0.4) 0%, rgba(5, 5, 5, 1) 100%), url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920'); background-size: cover; background-position: center; background-attachment: fixed; min-height: 100vh; width: 100%; display: flex; flex-direction: column; }
         header { width: 100%; max-width: 1200px; padding: 30px 20px; z-index: 1000; margin: 0 auto; }
+        .nav-link { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; position: relative; transition: 0.3s; }
+        .nav-link:hover, .active-link { color: var(--accent); }
+        .nav-link::after { content: ''; position: absolute; width: 0; height: 2px; bottom: -6px; left: 0; background: var(--accent); transition: width 0.3s; }
+        .nav-link:hover::after, .active-link::after { width: 100%; }
         
-        .card-panorama { position: relative; overflow: hidden; border-radius: 35px; border: 1px solid rgba(255,255,255,0.1); height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-size: cover; background-position: center; transition: 0.4s; cursor: pointer; text-align: center; padding: 20px; }
-        .card-panorama::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.7); z-index: 1; pointer-events: none; }
-        .shift-title { position: relative; z-index: 2; font-family: 'Montserrat'; font-weight: 900; font-style: italic; font-size: 35px; text-transform: uppercase; }
+        #mobile-menu { position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 35px; }
+        #mobile-menu.active { display: flex; }
 
-        /* ESTILOS ENCUESTA */
-        .vote-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 30px; padding: 20px; transition: 0.3s; }
-        .btn-vote-main { width: 100%; padding: 18px; border-radius: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; position: relative; overflow: hidden; background: white; color: black; transition: 0.4s; }
-        .percent-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0%; transition: width 1.5s cubic-bezier(0.1, 0, 0.3, 1); z-index: 0; }
-        .btn-vote-main span { position: relative; z-index: 10; }
-
-        .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,193,7,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; }
-        #globe-box, #globe-box-2, #3d-form, #3d-page { width: 100%; height: 220px; pointer-events: none; }
+        .shift-title { position: relative; z-index: 2; font-family: 'Montserrat'; font-weight: 900; font-style: italic; text-transform: uppercase; }
+        .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,193,7,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; transition: 0.3s; }
+        #globe-box, #globe-box-2 { width: 100%; height: 320px; pointer-events: none; }
         .hidden-section { display: none !important; }
+        
+        /* ESTILOS PARA VOTACIÓN 3D */
+        @keyframes spin-3d {
+            0% { transform: perspective(1000px) rotateY(0deg); }
+            100% { transform: perspective(1000px) rotateY(360deg); }
+        }
+        .img-spin-3d {
+            animation: spin-3d 5s linear infinite;
+            width: 140px;
+            height: 140px;
+            border-radius: 20px;
+            object-fit: cover;
+            margin: 20px auto;
+            box-shadow: 0 15px 35px rgba(255, 193, 7, 0.2);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        @media (max-width: 768px) { .nav-desktop { display: none; } .input-tech { font-size: 1.2rem; } .shift-title { font-size: 28px; } }
     </style>
 </head>
 <body>
@@ -60,6 +77,18 @@
                 </div>
             </div>
         </div>
+        <p class="text-[9px] text-gray-500 font-bold uppercase mt-6 tracking-[6px]">SISTEMA DE VERIFICACIÓN BIOMÉTRICA UNAC</p>
+    </div>
+
+    <!-- MENÚ MÓVIL -->
+    <div id="mobile-menu">
+        <button onclick="toggleMenu()" class="absolute top-10 right-10 text-yellow-500 text-4xl"><i class="fa-solid fa-xmark"></i></button>
+        <a href="index.html" class="text-xl font-black uppercase text-white">Inicio</a>
+        <a href="rutas.html" class="text-xl font-black uppercase text-white">Rutas</a>
+        <a href="ticket.html" class="text-xl font-black uppercase text-yellow-500 underline">Ticket</a>
+        <a href="registro.html" class="text-xl font-black uppercase text-white">Registro</a>
+        <a href="noticias.html" class="text-xl font-black uppercase text-white">Noticias</a>
+        <a href="contacto.html" class="text-xl font-black uppercase text-white">Contacto</a>
     </div>
 
     <div class="main-wrapper">
@@ -71,89 +100,132 @@
                     <span class="text-[9px] text-yellow-500 font-bold">Movilidad</span>
                 </div>
             </div>
+            <nav class="hidden md:flex gap-8 nav-desktop">
+                <a href="index.html" class="nav-link">Inicio</a>
+                <a href="rutas.html" class="nav-link">Rutas</a>
+                <a href="ticket.html" class="nav-link active-link">Ticket</a>
+                <a href="registro.html" class="nav-link">Registro</a>
+                <a href="noticias.html" class="nav-link">Noticias</a>
+                <a href="contacto.html" class="nav-link">Contacto</a>
+            </nav>
+            <button onclick="toggleMenu()" class="md:hidden bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-2 rounded-lg font-black text-xs">MENU <i class="fa-solid fa-bars-staggered"></i></button>
         </header>
 
         <main class="max-w-6xl mx-auto px-6 py-8 w-full flex-grow z-20">
             
-            <!-- PASO 1: LOGIN -->
+            <!-- PASO 1 (BÚSQUEDA) -->
             <div id="step-1" class="text-center animate-fade-up">
-                <h1 class="text-5xl md:text-6xl font-black uppercase italic tracking-tighter mb-4 leading-none">Tickets <span class="text-yellow-500">Oficiales</span></h1>
+                <h1 class="text-5xl md:text-6xl font-black uppercase italic tracking-tighter mb-4 leading-none">Acceso <span class="text-yellow-500">Oficial</span></h1>
+                <p class="text-gray-400 text-[11px] uppercase tracking-[3px] max-w-xl mx-auto mb-10 font-bold leading-relaxed">
+                    SISTEMA DE VERIFICACIÓN ESTUDIANTIL. <span class="text-yellow-500">CONEXIÓN INSTANTÁNEA FIREBASE</span>.
+                </p>
+                
                 <div class="max-w-xs mx-auto space-y-6">
                     <input type="text" id="dniInput" class="input-tech" placeholder="INGRESE DNI" maxlength="8">
                     <button onclick="Core.startScan()" class="bg-yellow-500 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-xl">Verificar Alumno</button>
+                    <!-- GLOBO 1 -->
                     <div id="globe-box"></div>
                 </div>
             </div>
 
-            <!-- PASO 1.5: ENCUESTA ANIMADA -->
-            <div id="step-survey" class="hidden-section animate-fade-up">
-                <div class="text-center mb-10">
-                    <h2 class="text-4xl font-black uppercase italic italic">SISTEMA DE <span class="text-yellow-500">OPINIÓN</span></h2>
-                    <p class="text-[10px] tracking-[4px] text-gray-500 uppercase font-bold">Selecciona tu formato preferido</p>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                    <!-- OPCION FORMULARIO -->
-                    <div class="vote-box flex flex-col items-center">
-                        <span class="text-xl font-black uppercase tracking-tighter text-white">FORMULARIO</span>
-                        <div id="3d-form"></div>
-                        <button id="btn-v-formulario" onclick="Core.castVote('formulario')" class="btn-vote-main">
-                            <div id="fill-formulario" class="percent-fill"></div>
-                            <span id="txt-formulario">VOTAR AQUÍ</span>
-                        </button>
-                    </div>
-
-                    <!-- OPCION PAGINA -->
-                    <div class="vote-box flex flex-col items-center">
-                        <span class="text-xl font-black uppercase tracking-tighter text-white">PÁGINA</span>
-                        <div id="3d-page"></div>
-                        <button id="btn-v-pagina" onclick="Core.castVote('pagina')" class="btn-vote-main">
-                            <div id="fill-pagina" class="percent-fill"></div>
-                            <span id="txt-pagina">VOTAR AQUÍ</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <p id="msg-final-voto" class="text-center mt-10 text-green-500 font-black uppercase text-[11px] tracking-[3px] hidden animate-pulse">
-                    <i class="fa-solid fa-circle-check"></i> Su voto fue contado con éxito. Redirigiendo...
-                </p>
-            </div>
-
-            <!-- PASO 2: SELECCIÓN DE TURNO -->
+            <!-- PASO 2 (SISTEMA INTERNO - VOTACIÓN) -->
             <div id="step-2" class="hidden-section animate-fade-up">
-                <div class="bg-white/5 border border-white/10 p-8 rounded-[40px] mb-8 border-l-8 border-l-yellow-500 flex flex-col md:flex-row justify-between items-center gap-8">
+                
+                <!-- Perfil y Estado de Voto -->
+                <div class="bg-white/5 border border-white/10 p-8 rounded-[40px] mb-8 border-l-8 border-l-yellow-500 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8">
                     <div class="flex items-center gap-6">
                         <div class="w-24 h-24 bg-yellow-500 rounded-[30px] flex items-center justify-center text-black text-5xl shadow-2xl"><i class="fa-solid fa-user-check"></i></div>
                         <div>
                             <h2 id="userName" class="text-3xl font-black uppercase italic"></h2>
                             <p id="userFac" class="text-yellow-500 text-[11px] font-black mt-3 uppercase"></p>
+                            <p class="text-[9px] text-gray-500 font-mono mt-2">DNI: <span id="userDni" class="text-white"></span> | <span class="text-green-500 font-black">IDENTIDAD VERIFICADA</span></p>
                         </div>
                     </div>
-                    <div class="text-center md:text-right bg-black/40 p-5 rounded-3xl border border-white/5 min-w-[200px]">
-                        <p class="text-[9px] text-gray-500 font-black uppercase mb-1 tracking-widest">Sincronización Hoy</p>
-                        <div class="text-4xl font-black text-yellow-500" id="total-requests">00</div>
+                    
+                    <!-- CAJA DE ESTADO DE VOTO -->
+                    <div id="status-container" class="text-center md:text-right bg-red-600/10 p-5 rounded-3xl border border-red-600/30 min-w-[200px] transition-all duration-500">
+                        <p class="text-[9px] text-gray-400 font-black uppercase mb-1 tracking-widest">Estado de Voto</p>
+                        <div class="text-3xl font-black text-red-500" id="status-text">NO VOTÓ</div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div id="card-m" class="card-panorama" style="background-image: url('DSC07555-768x432.jpg');" onclick="Core.requestTicket('mañana')">
-                        <h3 class="shift-title">Mañana</h3>
+                <!-- SECCIÓN DE VOTACIÓN -->
+                <div id="voting-module" class="mb-10 w-full animate-fade-up">
+                    <h3 class="text-3xl font-black uppercase italic text-center text-white mb-6">Encuesta <span class="text-yellow-500">Global</span></h3>
+                    
+                    <!-- ================= NUEVO: MENSAJE RECORDATORIO ================= -->
+                    <div class="bg-yellow-500/10 border border-yellow-500/30 p-6 md:p-8 rounded-3xl mb-8 text-left shadow-lg">
+                        <h4 class="text-yellow-500 font-black text-lg md:text-xl mb-4 uppercase tracking-wider flex items-center gap-3">
+                            <i class="fa-solid fa-bullhorn text-2xl animate-pulse"></i> RECORDATORIO IMPORTANTE: CIERRE DE ENCUESTA
+                        </h4>
+                        <div class="text-gray-300 text-sm md:text-base leading-relaxed space-y-3 font-medium">
+                            <p>Estimados compañeros:</p>
+                            <p>Como se anunció anteriormente, la encuesta solicitada por ustedes ya se encuentra activa para recopilar sus respuestas.</p>
+                            <p>Les recordamos que la plataforma estará habilitada únicamente hasta el <strong class="text-white">domingo 23 de agosto a las 23:59 h (00:00 h)</strong>. Les pedimos a quienes aún no la han completado que lo hagan a la brevedad posible, ya que no habrá prórroga.</p>
+                            <p>Agradecemos su participación y colaboración para seguir mejorando la gestión de la movilidad. 🚌👍</p>
+                        </div>
                     </div>
-                    <div id="card-t" class="card-panorama" style="background-image: url('DSC07588-768x432.jpg');" onclick="Core.goToTarde()">
-                        <h3 class="shift-title">Tarde</h3>
+
+                    <!-- ================= NUEVO: CRONÓMETRO DIGITAL ================= -->
+                    <div class="mb-10 flex flex-col items-center">
+                        <p class="text-[11px] text-yellow-500 font-black uppercase mb-4 tracking-[5px]">Tiempo Restante para Cierre</p>
+                        <div class="flex gap-3 md:gap-6 text-center font-mono">
+                            <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl">
+                                <span id="cd-days" class="text-3xl md:text-4xl font-black text-white">00</span>
+                                <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest">Días</span>
+                            </div>
+                            <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl">
+                                <span id="cd-hours" class="text-3xl md:text-4xl font-black text-white">00</span>
+                                <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest">Horas</span>
+                            </div>
+                            <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl">
+                                <span id="cd-minutes" class="text-3xl md:text-4xl font-black text-white">00</span>
+                                <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest">Min</span>
+                            </div>
+                            <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl relative overflow-hidden">
+                                <span id="cd-seconds" class="text-3xl md:text-4xl font-black text-red-500 animate-pulse relative z-10">00</span>
+                                <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest relative z-10">Seg</span>
+                                <div class="absolute bottom-0 left-0 w-full h-1 bg-red-600 animate-pulse"></div>
+                            </div>
+                        </div>
                     </div>
+                    <!-- ================= FIN NUEVO ================= -->
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Opción Formulario -->
+                        <div id="card-form" class="bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-500">
+                            <h3 class="shift-title text-white" style="font-size: 26px;">FORMULARIO</h3>
+                            <img src="we1234.jpeg" class="img-spin-3d" alt="Formulario">
+                            <button id="btn-form" onclick="Core.vote('formulario')" class="w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg">Votar aquí</button>
+                        </div>
+                        
+                        <!-- Opción Página -->
+                        <div id="card-pag" class="bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-500">
+                            <h3 class="shift-title text-white" style="font-size: 26px;">PÁGINA</h3>
+                            <img src="we12345.jpeg" class="img-spin-3d" alt="Página">
+                            <button id="btn-pag" onclick="Core.vote('pagina')" class="w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg">Votar aquí</button>
+                        </div>
+                    </div>
+
+                    <!-- Mensaje de confirmación de voto -->
+                    <div id="vote-message" class="mt-6 text-center text-[12px] font-black tracking-[2px] uppercase hidden p-4 rounded-xl transition-all duration-500"></div>
                 </div>
+                
+                <!-- GLOBO 2 -->
                 <div id="globe-box-2"></div>
             </div>
 
-            <!-- PASO 3: TICKET -->
-            <div id="step-3" class="hidden-section animate-fade-up">
-                <!-- Estructura del ticket original mantenida -->
-            </div>
         </main>
+
+        <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/40 mt-10 relative z-20">
+            <span class="text-center text-[10px] font-bold tracking-[8px] text-yellow-500 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
+            <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light">© 2026 UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
+        </footer>
     </div>
 
     <script>
+        function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
+
         const firebaseConfig = {
             apiKey: "AIzaSyBxaeAc2nq7iEeiLejvja3lKGwR4E09QS4",
             authDomain: "ventanilla-unac.firebaseapp.com",
@@ -168,127 +240,246 @@
 
         const Core = {
             alumno: null,
-            dni: null,
-            hasVoted: false,
+            userVote: null,
+            voteCounts: { formulario: 0, pagina: 0 },
 
-            init: function() { this.initThree('globe-box', null); },
+            init: function() { 
+                this.initThree('globe-box'); 
+                this.initCountdown(); // INICIALIZA EL CRONÓMETRO AL CARGAR
+            },
+
+            // ================= LÓGICA DEL CRONÓMETRO =================
+            initCountdown: function() {
+                // Fecha objetivo: 23 de Agosto de 2026 a las 23:59:59
+                const targetDate = new Date("August 23, 2026 23:59:59").getTime();
+                
+                const timer = setInterval(() => {
+                    const now = new Date().getTime();
+                    const distance = targetDate - now;
+
+                    // Elementos del DOM
+                    const elDays = document.getElementById("cd-days");
+                    const elHours = document.getElementById("cd-hours");
+                    const elMins = document.getElementById("cd-minutes");
+                    const elSecs = document.getElementById("cd-seconds");
+
+                    // Si ya pasó la fecha
+                    if (distance < 0) {
+                        clearInterval(timer);
+                        if(elDays) {
+                            elDays.innerText = "00";
+                            elHours.innerText = "00";
+                            elMins.innerText = "00";
+                            elSecs.innerText = "00";
+                        }
+                        return;
+                    }
+
+                    // Cálculos de tiempo
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    // Imprimir resultados con 2 dígitos (ej: 09 en lugar de 9)
+                    if(elDays) {
+                        elDays.innerText = days.toString().padStart(2, '0');
+                        elHours.innerText = hours.toString().padStart(2, '0');
+                        elMins.innerText = minutes.toString().padStart(2, '0');
+                        elSecs.innerText = seconds.toString().padStart(2, '0');
+                    }
+                }, 1000);
+            },
 
             startScan: async function() {
                 const dni = document.getElementById('dniInput').value.trim();
                 if(dni.length < 8) return Swal.fire('Error', 'DNI incompleto', 'warning');
-                this.dni = dni;
-
-                const overlay = document.getElementById('scanning-overlay'), bar = document.getElementById('progress-bar');
-                overlay.style.display = 'flex';
-                bar.style.width = '100%';
                 
-                await new Promise(r => setTimeout(r, 2000));
+                const overlay = document.getElementById('scanning-overlay'), msg = document.getElementById('loader-msg'), bar = document.getElementById('progress-bar');
+                overlay.style.display = 'flex';
+                
+                const steps = [
+                    {p:"20%",t:"ESTABLECIENDO CONEXIÓN SEGURA..."},
+                    {p:"40%",t:"BUSCANDO DNI EN PADRÓN..."},
+                    {p:"60%",t:"VALIDANDO MATRÍCULA Y FACULTAD..."},
+                    {p:"85%",t:"SINCRONIZANDO CON NUBE FIREBASE..."},
+                    {p:"100%",t:"AUTORIZACIÓN COMPLETADA"}
+                ];
+                for (const s of steps) { 
+                    msg.innerText = s.t; 
+                    bar.style.width = s.p; 
+                    await new Promise(r => setTimeout(r, 2000)); 
+                }
 
                 db.ref('alumnos/' + dni).once('value').then(snap => {
                     overlay.style.display = 'none';
                     if(snap.exists()){
-                        this.alumno = snap.val();
-                        this.checkSurveyStatus();
+                        this.alumno = snap.val(); 
+                        this.alumno.dni = dni;
+
+                        document.getElementById('step-1').classList.add('hidden-section');
+                        document.getElementById('step-2').classList.remove('hidden-section');
+                        document.getElementById('userName').innerText = this.alumno.Estudiante;
+                        document.getElementById('userFac').innerText = this.alumno.Facultad;
+                        document.getElementById('userDni').innerText = dni;
+                        
+                        this.initVoting();
+                        this.initThree('globe-box-2');
                     } else {
-                        Swal.fire('Error', 'No registrado', 'error');
+                        this.handleNotRegistered(dni);
+                    }
+                }).catch(err => {
+                    overlay.style.display = 'none';
+                    Swal.fire('Error de Conexión', 'Problema al conectar con la base de datos.', 'error');
+                });
+            },
+
+            initVoting: function() {
+                const dni = this.alumno.dni;
+                db.ref('sistema/votacion/resultados').on('value', snap => {
+                    this.voteCounts = snap.val() || { formulario: 0, pagina: 0 };
+                    if (this.userVote) {
+                        this.renderVoteState(true);
+                    }
+                });
+
+                db.ref(`sistema/votacion/votos_usuarios/${dni}`).on('value', snap => {
+                    if (snap.exists()) {
+                        this.userVote = snap.val();
+                        this.renderVoteState(true);
+                    } else {
+                        this.userVote = null;
+                        this.renderVoteState(false);
                     }
                 });
             },
 
-            checkSurveyStatus: async function() {
-                const snap = await db.ref('encuesta/votos/' + this.dni).once('value');
-                document.getElementById('step-1').classList.add('hidden-section');
-                document.getElementById('step-survey').classList.remove('hidden-section');
-                
-                // Iniciar 3D de imágenes
-                this.initThree('3d-form', 'we1234.jpeg');
-                this.initThree('3d-page', 'we12345.jpeg');
-
-                if(snap.exists()) {
-                    this.hasVoted = true;
-                    this.showResults(snap.val().opcion);
-                    document.getElementById('msg-final-voto').classList.remove('hidden');
-                    setTimeout(() => this.showStep2(), 3500);
+            vote: function(opcion) {
+                if(this.userVote) {
+                    Swal.fire('Atención', 'Ya has registrado tu voto anteriormente.', 'warning');
+                    return;
                 }
-            },
-
-            castVote: async function(opcion) {
-                if(this.hasVoted) return;
-                this.hasVoted = true;
-
-                // Registrar voto individual y sumar al contador global en Firebase
-                await db.ref('encuesta/votos/' + this.dni).set({ opcion: opcion, fecha: Date.now() });
-                await db.ref('encuesta/totales/' + opcion).transaction(c => (c || 0) + 1);
-
-                this.showResults(opcion);
-                document.getElementById('msg-final-voto').classList.remove('hidden');
-                setTimeout(() => this.showStep2(), 3000);
-            },
-
-            showResults: async function(votoUsuario) {
-                const snap = await db.ref('encuesta/totales').once('value');
-                const t = snap.val() || { formulario: 0, pagina: 0 };
-                const total = (t.formulario || 0) + (t.pagina || 0);
                 
-                const pForm = total === 0 ? 0 : Math.round((t.formulario / total) * 100);
-                const pPag = total === 0 ? 0 : Math.round((t.pagina / total) * 100);
+                // VALIDACIÓN EXTRA: Si ya pasó la fecha límite, bloquea el voto
+                const targetDate = new Date("August 23, 2026 23:59:59").getTime();
+                if (new Date().getTime() > targetDate) {
+                    Swal.fire('Encuesta Cerrada', 'El periodo para votar ha finalizado.', 'error');
+                    return;
+                }
+                
+                const dni = this.alumno.dni;
+                Swal.fire({
+                    title: 'Procesando Voto...',
+                    html: 'Conectando con Firebase de manera segura',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
 
-                // Formulario
-                const bForm = document.getElementById('btn-v-formulario');
-                const fForm = document.getElementById('fill-formulario');
-                bForm.style.background = (votoUsuario === 'formulario') ? '#10b981' : '#ef4444';
-                bForm.style.color = 'white';
-                fForm.style.width = pForm + "%";
-                fForm.style.background = 'rgba(0,0,0,0.2)';
-                document.getElementById('txt-formulario').innerText = pForm + "% COMPLETADO";
-
-                // Página
-                const bPag = document.getElementById('btn-v-pagina');
-                const fPag = document.getElementById('fill-pagina');
-                bPag.style.background = (votoUsuario === 'pagina') ? '#10b981' : '#ef4444';
-                bPag.style.color = 'white';
-                fPag.style.width = pPag + "%";
-                fPag.style.background = 'rgba(0,0,0,0.2)';
-                document.getElementById('txt-pagina').innerText = pPag + "% COMPLETADO";
+                const userRef = db.ref(`sistema/votacion/votos_usuarios/${dni}`);
+                userRef.once('value').then(snap => {
+                    if(snap.exists()) {
+                        Swal.fire('Atención', 'Ya has registrado tu voto anteriormente.', 'warning');
+                        return;
+                    }
+                    userRef.set(opcion).then(() => {
+                        db.ref(`sistema/votacion/resultados/${opcion}`).transaction(
+                            curr => (curr || 0) + 1
+                        ).then(() => {
+                            Swal.fire({
+                                title: '¡Voto Contado!',
+                                text: 'Tu voto fue guardado en el sistema general.',
+                                icon: 'success',
+                                background: '#050505', color: '#fff', confirmButtonColor: '#ffc107',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        });
+                    }).catch(error => {
+                        Swal.fire('Error', 'Hubo un error al procesar el voto', 'error');
+                    });
+                });
             },
 
-            showStep2: function() {
-                document.getElementById('step-survey').classList.add('hidden-section');
-                document.getElementById('step-2').classList.remove('hidden-section');
-                document.getElementById('userName').innerText = this.alumno.Estudiante;
-                document.getElementById('userFac').innerText = this.alumno.Facultad;
-                this.initThree('globe-box-2', null);
-            },
+            renderVoteState: function(hasVoted) {
+                const btnForm = document.getElementById('btn-form');
+                const btnPag = document.getElementById('btn-pag');
+                const cardForm = document.getElementById('card-form');
+                const cardPag = document.getElementById('card-pag');
+                const msg = document.getElementById('vote-message');
+                const statusBox = document.getElementById('status-container');
+                const statusText = document.getElementById('status-text');
 
-            initThree: function(id, imgUrl) {
-                const container = document.getElementById(id);
-                if(!container) return;
-                container.innerHTML = "";
-                const scene = new THREE.Scene();
-                const camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
-                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-                renderer.setSize(container.clientWidth, container.clientHeight);
-                container.appendChild(renderer.domElement);
+                const vForm = this.voteCounts.formulario || 0;
+                const vPag = this.voteCounts.pagina || 0;
+                const total = vForm + vPag;
+                
+                const percForm = total === 0 ? 0 : Math.round((vForm / total) * 100);
+                const percPag = total === 0 ? 0 : Math.round((vPag / total) * 100);
 
-                let obj;
-                if(!imgUrl) {
-                    obj = new THREE.Mesh(new THREE.IcosahedronGeometry(25, 2), new THREE.MeshBasicMaterial({ color: 0xffc107, wireframe: true, transparent: true, opacity: 0.15 }));
+                if(!hasVoted) {
+                    statusBox.className = "text-center md:text-right bg-red-600/10 p-5 rounded-3xl border border-red-600/30 min-w-[200px] transition-all duration-500";
+                    statusText.className = "text-3xl font-black text-red-500";
+                    statusText.innerText = "NO VOTÓ";
+
+                    btnForm.innerText = "VOTAR AQUÍ";
+                    btnPag.innerText = "VOTAR AQUÍ";
+                    btnForm.disabled = false;
+                    btnPag.disabled = false;
+                    
+                    btnForm.className = "w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg cursor-pointer";
+                    btnPag.className = "w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg cursor-pointer";
+                    cardForm.className = "bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
+                    cardPag.className = "bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
+                    msg.classList.add('hidden');
+                    return;
+                }
+
+                statusBox.className = "text-center md:text-right bg-green-500/10 p-5 rounded-3xl border border-green-500/30 min-w-[200px] transition-all duration-500";
+                statusText.className = "text-3xl font-black text-green-500";
+                statusText.innerText = "VOTÓ";
+
+                btnForm.innerText = `${percForm}% (${vForm} votos)`;
+                btnPag.innerText = `${percPag}% (${vPag} votos)`;
+                btnForm.disabled = true; 
+                btnPag.disabled = true;
+
+                if(this.userVote === 'formulario') {
+                    btnForm.className = "w-full bg-green-500 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 shadow-[0_0_20px_rgba(34,197,94,0.4)] cursor-not-allowed";
+                    cardForm.className = "bg-green-500/10 border border-green-500 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
+                    btnPag.className = "w-full bg-red-600 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 cursor-not-allowed opacity-80";
+                    cardPag.className = "bg-red-600/5 border border-red-600/50 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
                 } else {
-                    const texture = new THREE.TextureLoader().load(imgUrl);
-                    obj = new THREE.Mesh(new THREE.BoxGeometry(35, 35, 5), new THREE.MeshBasicMaterial({ map: texture }));
+                    btnPag.className = "w-full bg-green-500 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 shadow-[0_0_20px_rgba(34,197,94,0.4)] cursor-not-allowed";
+                    cardPag.className = "bg-green-500/10 border border-green-500 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
+                    btnForm.className = "w-full bg-red-600 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 cursor-not-allowed opacity-80";
+                    cardForm.className = "bg-red-600/5 border border-red-600/50 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
                 }
-                
-                scene.add(obj);
-                camera.position.z = 80;
-                const animate = () => { 
-                    requestAnimationFrame(animate); 
-                    obj.rotation.y += 0.02; 
-                    renderer.render(scene, camera); 
-                };
+
+                msg.classList.remove('hidden');
+                msg.className = "mt-6 text-center text-[12px] font-black tracking-[2px] uppercase p-4 rounded-xl bg-green-500/20 text-green-400 border border-green-500/50 animate-fade-up";
+                msg.innerHTML = `<i class="fa-solid fa-circle-check text-lg mb-2"></i><br>TU VOTO FUE CONTADO EXITOSAMENTE.<br>VOTASTE POR: <span class="text-white">${this.userVote.toUpperCase()}</span>`;
+            },
+
+            handleNotRegistered: function(dni) {
+                Swal.fire({
+                    title: '<span style="color:#ffc107">IDENTIDAD NO ENCONTRADA</span>',
+                    html: `<div style="text-align: left; font-size: 14px; color: #ccc;">
+                        <p>El DNI <b>${dni}</b> no figura en la base de datos oficial del padrón actual.</p></div>`,
+                    icon: 'warning', background: '#050505', color: '#fff', confirmButtonText: 'ENTENDIDO', confirmButtonColor: '#ffc107'
+                });
+            },
+
+            initThree: function(id) {
+                const container = document.getElementById(id); if(!container) return; container.innerHTML = "";
+                const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer.setSize(container.clientWidth, container.clientHeight); container.appendChild(renderer.domElement);
+                const globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 2), new THREE.MeshBasicMaterial({ color: 0xffc107, wireframe: true, transparent: true, opacity: 0.15 }));
+                scene.add(globe); camera.position.z = 100;
+                const animate = () => { requestAnimationFrame(animate); globe.rotation.y += 0.003; renderer.render(scene, camera); };
                 animate();
             }
         };
-
         window.onload = () => Core.init();
     </script>
 </body>
