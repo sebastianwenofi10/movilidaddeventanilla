@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UNAC | Sistema de Votación</title>
+    <title>UNAC | Terminal Oficial de Movilidad</title>
     
-    <!-- LIBRERÍAS EXTERNAS -->
+    <!-- LIBRERÍAS EXTERNAS - MANTENIDAS AL 100% -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -22,7 +23,7 @@
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
         
-        /* HUD DE CARGA AVANZADO */
+        /* HUD DE CARGA AVANZADO (10 SEGUNDOS) */
         #scanning-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; backdrop-filter: blur(25px); }
         .hud-box { width: 320px; height: 320px; border: 2px solid rgba(255, 193, 7, 0.2); position: relative; border-radius: 40px; background: rgba(255,255,255,0.02); overflow: hidden; }
         .hud-line { position: absolute; width: 100%; height: 4px; background: var(--accent); top: 0; animation: scanLine 2.5s linear infinite; box-shadow: 0 0 30px var(--accent); }
@@ -39,33 +40,29 @@
         #mobile-menu { position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 35px; }
         #mobile-menu.active { display: flex; }
 
-        .shift-title { position: relative; z-index: 2; font-family: 'Montserrat'; font-weight: 900; font-style: italic; text-transform: uppercase; }
+        /* TARJETAS DETALLADAS */
+        .card-panorama { position: relative; overflow: hidden; border-radius: 35px; border: 1px solid rgba(255,255,255,0.1); height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; background-size: cover; background-position: center; transition: 0.4s; cursor: pointer; text-align: center; padding: 20px; }
+        .card-panorama::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.7); z-index: 1; pointer-events: none; }
+        .card-panorama.locked { filter: grayscale(1) opacity(0.5); pointer-events: none; cursor: not-allowed; }
+        .shift-title { position: relative; z-index: 2; font-family: 'Montserrat'; font-weight: 900; font-style: italic; font-size: 35px; text-transform: uppercase; }
+        .time-badge { position: relative; z-index: 2; background: white; color: black; padding: 5px 20px; border-radius: 10px; font-weight: 900; font-size: 12px; margin: 10px 0; box-shadow: 0 5px 15px rgba(255,255,255,0.2); }
+        .delegate-msg { position: relative; z-index: 2; font-size: 9px; color: #aaa; text-transform: uppercase; font-weight: 700; max-width: 200px; margin-top: 10px; line-height: 1.4; }
+
+        .ticket-tech { background: #ffffff; color: #000; border-radius: 50px; width: 100%; max-width: 440px; margin: 0 auto; overflow: hidden; box-shadow: 0 60px 150px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1); }
+        .tech-header { background: #000; color: #fff; padding: 30px; text-align: center; border-bottom: 6px solid var(--accent); }
+        .asiento-display { font-family: 'Montserrat'; font-size: 110px; font-weight: 900; color: #e11d48; line-height: 1; margin: 20px 0; }
+        .data-grid { background: #f1f1f1; padding: 25px; border-radius: 30px; margin: 0 25px 25px; text-align: left; font-family: 'Share Tech Mono', monospace; }
+        .turno-box { background: #000; color: var(--accent); padding: 15px; border-radius: 20px; font-weight: 900; text-transform: uppercase; font-size: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
+
         .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,193,7,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; transition: 0.3s; }
         #globe-box, #globe-box-2 { width: 100%; height: 320px; pointer-events: none; }
         .hidden-section { display: none !important; }
-        
-        /* ESTILOS PARA VOTACIÓN 3D */
-        @keyframes spin-3d {
-            0% { transform: perspective(1000px) rotateY(0deg); }
-            100% { transform: perspective(1000px) rotateY(360deg); }
-        }
-        .img-spin-3d {
-            animation: spin-3d 5s linear infinite;
-            width: 140px;
-            height: 140px;
-            border-radius: 20px;
-            object-fit: cover;
-            margin: 20px auto;
-            box-shadow: 0 15px 35px rgba(255, 193, 7, 0.2);
-            border: 2px solid rgba(255,255,255,0.1);
-        }
-
-        @media (max-width: 768px) { .nav-desktop { display: none; } .input-tech { font-size: 1.2rem; } .shift-title { font-size: 28px; } }
+        @media (max-width: 768px) { .nav-desktop { display: none; } .input-tech { font-size: 1.2rem; } .shift-title { font-size: 28px; } .asiento-display { font-size: 80px; } }
     </style>
 </head>
 <body>
 
-    <!-- HUD DE CARGA -->
+    <!-- HUD DE CARGA (10 SEGUNDOS) -->
     <div id="scanning-overlay">
         <div class="hud-box">
             <div class="hud-line"></div>
@@ -80,7 +77,7 @@
         <p class="text-[9px] text-gray-500 font-bold uppercase mt-6 tracking-[6px]">SISTEMA DE VERIFICACIÓN BIOMÉTRICA UNAC</p>
     </div>
 
-    <!-- MENÚ MÓVIL -->
+    <!-- MENÚ MÓVIL COMPLETO -->
     <div id="mobile-menu">
         <button onclick="toggleMenu()" class="absolute top-10 right-10 text-yellow-500 text-4xl"><i class="fa-solid fa-xmark"></i></button>
         <a href="index.html" class="text-xl font-black uppercase text-white">Inicio</a>
@@ -100,6 +97,7 @@
                     <span class="text-[9px] text-yellow-500 font-bold">Movilidad</span>
                 </div>
             </div>
+            <!-- NAVEGACIÓN COMPLETA -->
             <nav class="hidden md:flex gap-8 nav-desktop">
                 <a href="index.html" class="nav-link">Inicio</a>
                 <a href="rutas.html" class="nav-link">Rutas</a>
@@ -113,108 +111,89 @@
 
         <main class="max-w-6xl mx-auto px-6 py-8 w-full flex-grow z-20">
             
-            <!-- PASO 1 (BÚSQUEDA) -->
+            <!-- PASO 1 -->
             <div id="step-1" class="text-center animate-fade-up">
-                <h1 class="text-5xl md:text-6xl font-black uppercase italic tracking-tighter mb-4 leading-none">Acceso <span class="text-yellow-500">Oficial</span></h1>
+                <h1 class="text-5xl md:text-6xl font-black uppercase italic tracking-tighter mb-4 leading-none">Tickets <span class="text-yellow-500">Oficiales</span></h1>
                 <p class="text-gray-400 text-[11px] uppercase tracking-[3px] max-w-xl mx-auto mb-10 font-bold leading-relaxed">
-                    SISTEMA DE VERIFICACIÓN ESTUDIANTIL. <span class="text-yellow-500">CONEXIÓN INSTANTÁNEA FIREBASE</span>.
+                    SISTEMA DE PASES DIGITALES - RUTA VENTANILLA. <span class="text-yellow-500">CONEXIÓN INSTANTÁNEA FIREBASE</span>.
                 </p>
                 
                 <div class="max-w-xs mx-auto space-y-6">
                     <input type="text" id="dniInput" class="input-tech" placeholder="INGRESE DNI" maxlength="8">
                     <button onclick="Core.startScan()" class="bg-yellow-500 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-xl">Verificar Alumno</button>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <a href="lista.html" target="_blank" class="bg-white/5 border border-white/10 p-4 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-black transition flex items-center justify-center gap-2"><i class="fa-solid fa-list-ul"></i> Lista de HOY</a>
+                        <a href="tutorial.html" class="bg-white/5 border border-white/10 p-4 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-black transition flex items-center justify-center gap-2"><i class="fa-solid fa-play"></i> Tutorial</a>
+                    </div>
                     <!-- GLOBO 1 -->
                     <div id="globe-box"></div>
+                    <a href="AccesoDelegados.html" target="_blank" class="flex items-center justify-center gap-3 text-[10px] font-black text-gray-600 hover:text-yellow-500 transition uppercase tracking-widest mt-6">
+                        <i class="fa-solid fa-user-shield text-lg"></i> Acceso Restringido Delegados
+                    </a>
                 </div>
             </div>
 
-            <!-- PASO 2 (SISTEMA INTERNO - VOTACIÓN) -->
+            <!-- PASO 2 -->
             <div id="step-2" class="hidden-section animate-fade-up">
-                
-                <!-- Perfil y Estado de Voto -->
                 <div class="bg-white/5 border border-white/10 p-8 rounded-[40px] mb-8 border-l-8 border-l-yellow-500 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8">
                     <div class="flex items-center gap-6">
                         <div class="w-24 h-24 bg-yellow-500 rounded-[30px] flex items-center justify-center text-black text-5xl shadow-2xl"><i class="fa-solid fa-user-check"></i></div>
                         <div>
                             <h2 id="userName" class="text-3xl font-black uppercase italic"></h2>
                             <p id="userFac" class="text-yellow-500 text-[11px] font-black mt-3 uppercase"></p>
-                            <p class="text-[9px] text-gray-500 font-mono mt-2">DNI: <span id="userDni" class="text-white"></span> | <span class="text-green-500 font-black">IDENTIDAD VERIFICADA</span></p>
+                            <p class="text-[9px] text-gray-500 font-mono mt-2">DNI: <span id="userDni" class="text-white"></span> | <span class="text-green-500 font-black">SINCRO ACTIVA</span></p>
                         </div>
                     </div>
-                    
-                    <!-- CAJA DE ESTADO DE VOTO -->
-                    <div id="status-container" class="text-center md:text-right bg-red-600/10 p-5 rounded-3xl border border-red-600/30 min-w-[200px] transition-all duration-500">
-                        <p class="text-[9px] text-gray-400 font-black uppercase mb-1 tracking-widest">Estado de Voto</p>
-                        <div class="text-3xl font-black text-red-500" id="status-text">NO VOTÓ</div>
+                    <div class="text-center md:text-right bg-black/40 p-5 rounded-3xl border border-white/5 min-w-[200px]">
+                        <p class="text-[9px] text-gray-500 font-black uppercase mb-1 tracking-widest">Sincronización Hoy</p>
+                        <div class="text-4xl font-black text-yellow-500" id="total-requests">00</div>
                     </div>
                 </div>
 
-                <!-- SECCIÓN DE VOTACIÓN -->
-                <div id="voting-module" class="mb-10 w-full animate-fade-up">
-                    <h3 class="text-3xl font-black uppercase italic text-center text-white mb-6">Encuesta <span class="text-yellow-500">Global</span></h3>
-                    
-                    <!-- ================= NUEVO: MENSAJE RECORDATORIO ================= -->
-                    <div class="bg-yellow-500/10 border border-yellow-500/30 p-6 md:p-8 rounded-3xl mb-8 text-left shadow-lg">
-                        <h4 class="text-yellow-500 font-black text-lg md:text-xl mb-4 uppercase tracking-wider flex items-center gap-3">
-                            <i class="fa-solid fa-bullhorn text-2xl animate-pulse"></i> RECORDATORIO IMPORTANTE: CIERRE DE ENCUESTA
-                        </h4>
-                        <div class="text-gray-300 text-sm md:text-base leading-relaxed space-y-3 font-medium">
-                            <p>Estimados compañeros:</p>
-                            <p>Como se anunció anteriormente, la encuesta solicitada por ustedes ya se encuentra activa para recopilar sus respuestas.</p>
-                            <p>Les recordamos que la plataforma estará habilitada únicamente hasta el <strong class="text-white">domingo 23 de agosto a las 23:59 h (00:00 h)</strong>. Les pedimos a quienes aún no la han completado que lo hagan a la brevedad posible, ya que no habrá prórroga.</p>
-                            <p>Agradecemos su participación y colaboración para seguir mejorando la gestión de la movilidad. 🚌👍</p>
-                        </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div id="card-m" class="card-panorama" style="background-image: url('DSC07555-768x432.jpg');" onclick="Core.requestTicket('mañana')">
+                        <span id="badge-m" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2"></span>
+                        <h3 class="shift-title text-white">Mañana</h3>
+                        <div class="time-badge">SALIDA: 05:15 AM</div>
+                        <p class="delegate-msg">Apertura automática de sistema</p>
                     </div>
-
-                    <!-- ================= NUEVO: CRONÓMETRO DIGITAL ================= -->
-                    <div class="mb-10 flex flex-col items-center">
-                        <p class="text-[11px] text-yellow-500 font-black uppercase mb-4 tracking-[5px]">Tiempo Restante para Cierre</p>
-                        <div class="flex gap-3 md:gap-6 text-center font-mono">
-                            <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl">
-                                <span id="cd-days" class="text-3xl md:text-4xl font-black text-white">00</span>
-                                <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest">Días</span>
-                            </div>
-                            <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl">
-                                <span id="cd-hours" class="text-3xl md:text-4xl font-black text-white">00</span>
-                                <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest">Horas</span>
-                            </div>
-                            <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl">
-                                <span id="cd-minutes" class="text-3xl md:text-4xl font-black text-white">00</span>
-                                <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest">Min</span>
-                            </div>
-                            <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl relative overflow-hidden">
-                                <span id="cd-seconds" class="text-3xl md:text-4xl font-black text-red-500 animate-pulse relative z-10">00</span>
-                                <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest relative z-10">Seg</span>
-                                <div class="absolute bottom-0 left-0 w-full h-1 bg-red-600 animate-pulse"></div>
-                            </div>
-                        </div>
+                    <div id="card-t" class="card-panorama" style="background-image: url('DSC07588-768x432.jpg');" onclick="Core.goToTarde()">
+                        <span id="badge-t" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2"></span>
+                        <h3 class="shift-title text-white">Tarde</h3>
+                        <div class="time-badge">SALIDA: 06:00 PM</div>
+                        <p class="delegate-msg">Activación Sincronizada Delegado</p>
                     </div>
-                    <!-- ================= FIN NUEVO ================= -->
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Opción Formulario -->
-                        <div id="card-form" class="bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-500">
-                            <h3 class="shift-title text-white" style="font-size: 26px;">FORMULARIO</h3>
-                            <img src="we1234.jpeg" class="img-spin-3d" alt="Formulario">
-                            <button id="btn-form" onclick="Core.vote('formulario')" class="w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg">Votar aquí</button>
-                        </div>
-                        
-                        <!-- Opción Página -->
-                        <div id="card-pag" class="bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-500">
-                            <h3 class="shift-title text-white" style="font-size: 26px;">PÁGINA</h3>
-                            <img src="we12345.jpeg" class="img-spin-3d" alt="Página">
-                            <button id="btn-pag" onclick="Core.vote('pagina')" class="w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg">Votar aquí</button>
-                        </div>
-                    </div>
-
-                    <!-- Mensaje de confirmación de voto -->
-                    <div id="vote-message" class="mt-6 text-center text-[12px] font-black tracking-[2px] uppercase hidden p-4 rounded-xl transition-all duration-500"></div>
                 </div>
-                
+                <div id="card-n" class="card-panorama w-full" style="background-image: url('DSC07629-768x432.jpg');" onclick="Core.requestTicket('noche')">
+                    <span id="badge-n" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2"></span>
+                    <h3 class="shift-title text-white text-5xl">Noche</h3>
+                    <div class="time-badge">SALIDA: 10:15 PM</div>
+                    <p class="delegate-msg">Activación Sincronizada Delegado</p>
+                </div>
                 <!-- GLOBO 2 -->
                 <div id="globe-box-2"></div>
             </div>
 
+            <!-- PASO 3 -->
+            <div id="step-3" class="hidden-section animate-fade-up text-center">
+                <div class="ticket-tech">
+                    <div class="tech-header"><h2>MOVILIDAD UNAC</h2><p>RUTA VENTANILLA</p></div>
+                    <div class="p-8">
+                        <p id="t-fecha" class="text-sm font-black text-black uppercase mb-6"></p>
+                        <div class="bg-gray-100 border-4 border-dashed border-gray-300 rounded-[50px] py-10 mb-8 relative">
+                            <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">NÚMERO DE ASIENTO</p>
+                            <div id="seat-area" class="asiento-display">--</div>
+                        </div>
+                        <div id="qrcode-vip" class="flex justify-center mb-8"></div>
+                        <div class="data-grid space-y-2 text-left">
+                            <div class="flex justify-between text-[11px] border-b pb-2"><span>PASAJERO:</span> <span id="t-nom" class="font-bold uppercase"></span></div>
+                            <div class="flex justify-between text-[11px] border-b pb-2"><span>DNI:</span> <span id="t-dni" class="font-bold"></span></div>
+                            <div class="turno-box"><span>Turno Seleccionado</span> <span id="t-turno-val"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
 
         <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/40 mt-10 relative z-20">
@@ -238,57 +217,34 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        let tardeActivo = false, nocheActivo = false;
+
         const Core = {
             alumno: null,
-            userVote: null,
-            voteCounts: { formulario: 0, pagina: 0 },
+            init: function() { this.initThree('globe-box'); this.listenFirebase(); },
 
-            init: function() { 
-                this.initThree('globe-box'); 
-                this.initCountdown(); // INICIALIZA EL CRONÓMETRO AL CARGAR
+            listenFirebase: function() {
+                db.ref('sistema/config').on('value', snap => {
+                    const cfg = snap.val() || {};
+                    tardeActivo = !!cfg.tarde_activo;
+                    nocheActivo = !!cfg.noche_activo;
+                    this.upUI('badge-m', 'card-m', (new Date().getHours() >= 21 || new Date().getHours() < 10));
+                    this.upUI('badge-t', 'card-t', tardeActivo);
+                    this.upUI('badge-n', 'card-n', nocheActivo);
+                });
+                db.ref('sistema/viajes/' + new Date().toISOString().split('T')[0]).on('value', snap => {
+                    let total = 0; const data = snap.val() || {};
+                    ['mañana','tarde','noche'].forEach(t => { if(data[t] && data[t].contador) total += data[t].contador; });
+                    document.getElementById('total-requests').innerText = total.toString().padStart(2, '0');
+                });
             },
 
-            // ================= LÓGICA DEL CRONÓMETRO =================
-            initCountdown: function() {
-                // Fecha objetivo: 23 de Agosto de 2026 a las 23:59:59
-                const targetDate = new Date("August 23, 2026 23:59:59").getTime();
-                
-                const timer = setInterval(() => {
-                    const now = new Date().getTime();
-                    const distance = targetDate - now;
-
-                    // Elementos del DOM
-                    const elDays = document.getElementById("cd-days");
-                    const elHours = document.getElementById("cd-hours");
-                    const elMins = document.getElementById("cd-minutes");
-                    const elSecs = document.getElementById("cd-seconds");
-
-                    // Si ya pasó la fecha
-                    if (distance < 0) {
-                        clearInterval(timer);
-                        if(elDays) {
-                            elDays.innerText = "00";
-                            elHours.innerText = "00";
-                            elMins.innerText = "00";
-                            elSecs.innerText = "00";
-                        }
-                        return;
-                    }
-
-                    // Cálculos de tiempo
-                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                    // Imprimir resultados con 2 dígitos (ej: 09 en lugar de 9)
-                    if(elDays) {
-                        elDays.innerText = days.toString().padStart(2, '0');
-                        elHours.innerText = hours.toString().padStart(2, '0');
-                        elMins.innerText = minutes.toString().padStart(2, '0');
-                        elSecs.innerText = seconds.toString().padStart(2, '0');
-                    }
-                }, 1000);
+            upUI: function(bid, cid, act) {
+                const b = document.getElementById(bid), c = document.getElementById(cid);
+                if(!b || !c) return;
+                b.innerText = act ? "ACTIVO" : "INACTIVO";
+                b.className = act ? "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 bg-green-500 animate-pulse" : "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 bg-red-600";
+                act ? c.classList.remove('locked') : c.classList.add('locked');
             },
 
             startScan: async function() {
@@ -298,9 +254,10 @@
                 const overlay = document.getElementById('scanning-overlay'), msg = document.getElementById('loader-msg'), bar = document.getElementById('progress-bar');
                 overlay.style.display = 'flex';
                 
+                // HUD 10 SEGUNDOS REALES
                 const steps = [
                     {p:"20%",t:"ESTABLECIENDO CONEXIÓN SEGURA..."},
-                    {p:"40%",t:"BUSCANDO DNI EN PADRÓN..."},
+                    {p:"40%",t:"BUSCANDO DNI EN PADRÓN 2024..."},
                     {p:"60%",t:"VALIDANDO MATRÍCULA Y FACULTAD..."},
                     {p:"85%",t:"SINCRONIZANDO CON NUBE FIREBASE..."},
                     {p:"100%",t:"AUTORIZACIÓN COMPLETADA"}
@@ -314,159 +271,69 @@
                 db.ref('alumnos/' + dni).once('value').then(snap => {
                     overlay.style.display = 'none';
                     if(snap.exists()){
-                        this.alumno = snap.val(); 
-                        this.alumno.dni = dni;
-
+                        this.alumno = snap.val(); this.alumno.dni = dni;
                         document.getElementById('step-1').classList.add('hidden-section');
                         document.getElementById('step-2').classList.remove('hidden-section');
                         document.getElementById('userName').innerText = this.alumno.Estudiante;
                         document.getElementById('userFac').innerText = this.alumno.Facultad;
                         document.getElementById('userDni').innerText = dni;
-                        
-                        this.initVoting();
                         this.initThree('globe-box-2');
                     } else {
                         this.handleNotRegistered(dni);
                     }
-                }).catch(err => {
-                    overlay.style.display = 'none';
-                    Swal.fire('Error de Conexión', 'Problema al conectar con la base de datos.', 'error');
                 });
-            },
-
-            initVoting: function() {
-                const dni = this.alumno.dni;
-                db.ref('sistema/votacion/resultados').on('value', snap => {
-                    this.voteCounts = snap.val() || { formulario: 0, pagina: 0 };
-                    if (this.userVote) {
-                        this.renderVoteState(true);
-                    }
-                });
-
-                db.ref(`sistema/votacion/votos_usuarios/${dni}`).on('value', snap => {
-                    if (snap.exists()) {
-                        this.userVote = snap.val();
-                        this.renderVoteState(true);
-                    } else {
-                        this.userVote = null;
-                        this.renderVoteState(false);
-                    }
-                });
-            },
-
-            vote: function(opcion) {
-                if(this.userVote) {
-                    Swal.fire('Atención', 'Ya has registrado tu voto anteriormente.', 'warning');
-                    return;
-                }
-                
-                // VALIDACIÓN EXTRA: Si ya pasó la fecha límite, bloquea el voto
-                const targetDate = new Date("August 23, 2026 23:59:59").getTime();
-                if (new Date().getTime() > targetDate) {
-                    Swal.fire('Encuesta Cerrada', 'El periodo para votar ha finalizado.', 'error');
-                    return;
-                }
-                
-                const dni = this.alumno.dni;
-                Swal.fire({
-                    title: 'Procesando Voto...',
-                    html: 'Conectando con Firebase de manera segura',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
-                });
-
-                const userRef = db.ref(`sistema/votacion/votos_usuarios/${dni}`);
-                userRef.once('value').then(snap => {
-                    if(snap.exists()) {
-                        Swal.fire('Atención', 'Ya has registrado tu voto anteriormente.', 'warning');
-                        return;
-                    }
-                    userRef.set(opcion).then(() => {
-                        db.ref(`sistema/votacion/resultados/${opcion}`).transaction(
-                            curr => (curr || 0) + 1
-                        ).then(() => {
-                            Swal.fire({
-                                title: '¡Voto Contado!',
-                                text: 'Tu voto fue guardado en el sistema general.',
-                                icon: 'success',
-                                background: '#050505', color: '#fff', confirmButtonColor: '#ffc107',
-                                timer: 2000,
-                                showConfirmButton: false
-                            });
-                        });
-                    }).catch(error => {
-                        Swal.fire('Error', 'Hubo un error al procesar el voto', 'error');
-                    });
-                });
-            },
-
-            renderVoteState: function(hasVoted) {
-                const btnForm = document.getElementById('btn-form');
-                const btnPag = document.getElementById('btn-pag');
-                const cardForm = document.getElementById('card-form');
-                const cardPag = document.getElementById('card-pag');
-                const msg = document.getElementById('vote-message');
-                const statusBox = document.getElementById('status-container');
-                const statusText = document.getElementById('status-text');
-
-                const vForm = this.voteCounts.formulario || 0;
-                const vPag = this.voteCounts.pagina || 0;
-                const total = vForm + vPag;
-                
-                const percForm = total === 0 ? 0 : Math.round((vForm / total) * 100);
-                const percPag = total === 0 ? 0 : Math.round((vPag / total) * 100);
-
-                if(!hasVoted) {
-                    statusBox.className = "text-center md:text-right bg-red-600/10 p-5 rounded-3xl border border-red-600/30 min-w-[200px] transition-all duration-500";
-                    statusText.className = "text-3xl font-black text-red-500";
-                    statusText.innerText = "NO VOTÓ";
-
-                    btnForm.innerText = "VOTAR AQUÍ";
-                    btnPag.innerText = "VOTAR AQUÍ";
-                    btnForm.disabled = false;
-                    btnPag.disabled = false;
-                    
-                    btnForm.className = "w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg cursor-pointer";
-                    btnPag.className = "w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg cursor-pointer";
-                    cardForm.className = "bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                    cardPag.className = "bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                    msg.classList.add('hidden');
-                    return;
-                }
-
-                statusBox.className = "text-center md:text-right bg-green-500/10 p-5 rounded-3xl border border-green-500/30 min-w-[200px] transition-all duration-500";
-                statusText.className = "text-3xl font-black text-green-500";
-                statusText.innerText = "VOTÓ";
-
-                btnForm.innerText = `${percForm}% (${vForm} votos)`;
-                btnPag.innerText = `${percPag}% (${vPag} votos)`;
-                btnForm.disabled = true; 
-                btnPag.disabled = true;
-
-                if(this.userVote === 'formulario') {
-                    btnForm.className = "w-full bg-green-500 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 shadow-[0_0_20px_rgba(34,197,94,0.4)] cursor-not-allowed";
-                    cardForm.className = "bg-green-500/10 border border-green-500 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                    btnPag.className = "w-full bg-red-600 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 cursor-not-allowed opacity-80";
-                    cardPag.className = "bg-red-600/5 border border-red-600/50 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                } else {
-                    btnPag.className = "w-full bg-green-500 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 shadow-[0_0_20px_rgba(34,197,94,0.4)] cursor-not-allowed";
-                    cardPag.className = "bg-green-500/10 border border-green-500 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                    btnForm.className = "w-full bg-red-600 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 cursor-not-allowed opacity-80";
-                    cardForm.className = "bg-red-600/5 border border-red-600/50 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                }
-
-                msg.classList.remove('hidden');
-                msg.className = "mt-6 text-center text-[12px] font-black tracking-[2px] uppercase p-4 rounded-xl bg-green-500/20 text-green-400 border border-green-500/50 animate-fade-up";
-                msg.innerHTML = `<i class="fa-solid fa-circle-check text-lg mb-2"></i><br>TU VOTO FUE CONTADO EXITOSAMENTE.<br>VOTASTE POR: <span class="text-white">${this.userVote.toUpperCase()}</span>`;
             },
 
             handleNotRegistered: function(dni) {
                 Swal.fire({
                     title: '<span style="color:#ffc107">IDENTIDAD NO ENCONTRADA</span>',
                     html: `<div style="text-align: left; font-size: 14px; color: #ccc;">
-                        <p>El DNI <b>${dni}</b> no figura en la base de datos oficial del padrón actual.</p></div>`,
-                    icon: 'warning', background: '#050505', color: '#fff', confirmButtonText: 'ENTENDIDO', confirmButtonColor: '#ffc107'
+                        <p>El DNI <b>${dni}</b> no figura en la base de datos oficial del semestre actual.</p><br>
+                        <b>¿Por qué ocurre esto?</b><ul style="margin-left:20px; list-style:circle; margin-top:10px;">
+                        <li>No has realizado tu registro de ruta.</li><li>Tu facultad no ha enviado el padrón.</li></ul><br>
+                        <p><b>Acción:</b> Pulsa abajo para registrarte ahora mismo.</p></div>`,
+                    icon: 'warning', background: '#050505', color: '#fff', confirmButtonText: 'IR A REGISTRO', showCancelButton: true, cancelButtonText: 'REINTENTAR', confirmButtonColor: '#ffc107'
+                }).then((r) => { if (r.isConfirmed) window.location.href = "registro.html"; });
+            },
+
+            // REDIRECCIÓN HACIA EL CÓDIGO 3 (turnotarde.html)
+            goToTarde: function() {
+                if (tardeActivo && this.alumno) {
+                    sessionStorage.setItem('valid_session', 'true'); // HABILITA LA ENTRADA AL CÓDIGO 3
+                    window.location.href = "turnotarde.html";
+                } else {
+                    Swal.fire('Inactivo', 'Turno tarde no habilitado por el delegado.', 'warning');
+                }
+            },
+
+            requestTicket: function(turno) {
+                const fecha = new Date().toISOString().split('T')[0];
+                const ruta = `sistema/viajes/${fecha}/${turno}`;
+                document.getElementById('scanning-overlay').style.display = 'flex';
+                db.ref(`${ruta}/registros/${this.alumno.dni}`).once('value').then(snap => {
+                    if(snap.exists()) return this.renderTicket(turno, snap.val());
+                    db.ref(`${ruta}/contador`).transaction(c => (c || 0) + 1, (err, comm, snapC) => {
+                        if(comm){
+                            const data = { orden: snapC.val(), nombre: this.alumno.Estudiante, hora: new Date().toLocaleTimeString() };
+                            db.ref(`${ruta}/registros/${this.alumno.dni}`).set(data);
+                            this.renderTicket(turno, data);
+                        }
+                    });
                 });
+            },
+
+            renderTicket: function(turno, data) {
+                document.getElementById('t-nom').innerText = data.nombre;
+                document.getElementById('t-dni').innerText = this.alumno.dni;
+                document.getElementById('t-turno-val').innerText = turno.toUpperCase();
+                document.getElementById('t-fecha').innerText = new Date().toLocaleDateString('es-PE', { weekday:'long', year:'numeric', month:'long', day:'numeric' }).toUpperCase();
+                const area = document.getElementById('seat-area');
+                area.innerText = data.orden <= 40 ? data.orden.toString().padStart(2,'0') : "PARADO";
+                document.getElementById('qrcode-vip').innerHTML = "";
+                new QRCode(document.getElementById("qrcode-vip"), { text: `UNAC-V-${this.alumno.dni}-${turno}-${data.orden}`, width: 180, height: 180 });
+                document.getElementById('scanning-overlay').style.display = 'none';
+                document.getElementById('step-2').classList.add('hidden-section');
+                document.getElementById('step-3').classList.remove('hidden-section');
             },
 
             initThree: function(id) {
