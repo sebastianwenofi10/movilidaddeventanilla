@@ -300,6 +300,7 @@
             goToTarde: function() {
                 if (tardeActivo && this.alumno) {
                     sessionStorage.setItem('valid_session', 'true'); // HABILITA LA ENTRADA AL CÓDIGO 3
+                    sessionStorage.setItem('auth_timestamp', Date.now());
                     window.location.href = "turnotarde.html";
                 } else {
                     Swal.fire('Inactivo', 'Turno tarde no habilitado por el delegado.', 'warning');
