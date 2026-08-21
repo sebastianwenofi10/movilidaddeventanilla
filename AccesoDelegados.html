@@ -132,7 +132,7 @@
         <!-- PANEL DASHBOARD -->
         <div id="scanner-container" class="w-full max-w-lg px-4 py-4 hidden">
             
-            <!-- TARJETAS DE TURNOS (DISEÑO RESTAURADO) -->
+            <!-- TARJETAS DE TURNOS -->
             <div class="mb-6">
                 <div class="flex justify-between items-center mb-3">
                     <span class="text-[11px] font-black uppercase text-gray-400 tracking-widest">Control de Tarjetas / Tickets</span>
@@ -248,9 +248,9 @@
         const soundOk = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         const soundError = new Audio('https://www.soundjay.com/buttons/beep-05.mp3');
 
-        // SEGURIDAD CORREGIDA
+        // SEGURIDAD
         let delegadoActivo = localStorage.getItem('unac_session_dni') || "";
-        const DELEGADOS = ["71886034", "77570731"]; // DNI Corregido!
+        const DELEGADOS = ["71886034", "77570731"];
 
         let listaGlobalAlumnos = []; 
         let configGlobal = { cupos: 40, hora_tarde: '18:00', hora_noche: '22:15', tarde_activo: false, noche_activo: false };
@@ -276,7 +276,7 @@
         function cerrarSesion() { localStorage.removeItem('unac_session_dni'); location.reload(); }
 
         // ==========================================
-        // CONFIGURACIONES Y BLOQUEO AUTOMÁTICO
+        // CONFIGURACIONES
         // ==========================================
         function abrirAjustes() {
             document.getElementById('cfg-cupos').value = configGlobal.cupos;
@@ -328,32 +328,45 @@
         }
 
         // ==========================================
-        // INICIO Y SINCRONIZACIÓN PRINCIPAL
+        // INICIO, AUTO-RESETEO Y SINCRONIZACIÓN
         // ==========================================
         function iniciarSistema() {
-            const fecha = new Date().toISOString().split('T')[0];
+            const fechaHoy = new Date().toISOString().split('T')[0];
             const scanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 });
             scanner.render(onScanSuccess);
 
-            // Escuchar Ajustes en tiempo real
-            db.ref('sistema/config').on('value', snap => {
-                const data = snap.val() || {};
-                configGlobal.cupos = data.cupos_maximos || 40;
-                configGlobal.hora_tarde = data.hora_tarde || '18:00';
-                configGlobal.hora_noche = data.hora_noche || '22:15';
-                configGlobal.tarde_activo = data.tarde_activo || false;
-                configGlobal.noche_activo = data.noche_activo || false;
+            // NUEVO: AUTO-RESETEO SI ES UN NUEVO DÍA
+            db.ref('sistema/config').once('value', snap => {
+                let data = snap.val() || {};
+                // Si la fecha guardada es distinta a hoy (o no existe) apagamos todo
+                if (data.fecha_sistema !== fechaHoy) {
+                    db.ref('sistema/config').update({
+                        tarde_activo: false,
+                        noche_activo: false,
+                        fecha_sistema: fechaHoy
+                    });
+                }
                 
-                document.getElementById('lbl-hora-tarde').innerText = configGlobal.hora_tarde;
-                document.getElementById('lbl-hora-noche').innerText = configGlobal.hora_noche;
-                actualizarUI_Tarjetas();
+                // Una vez comprobado y limpiado, escuchamos los cambios en tiempo real
+                db.ref('sistema/config').on('value', snapRealtime => {
+                    const dataRT = snapRealtime.val() || {};
+                    configGlobal.cupos = dataRT.cupos_maximos || 40;
+                    configGlobal.hora_tarde = dataRT.hora_tarde || '18:00';
+                    configGlobal.hora_noche = dataRT.hora_noche || '22:15';
+                    configGlobal.tarde_activo = dataRT.tarde_activo || false;
+                    configGlobal.noche_activo = dataRT.noche_activo || false;
+                    
+                    document.getElementById('lbl-hora-tarde').innerText = configGlobal.hora_tarde;
+                    document.getElementById('lbl-hora-noche').innerText = configGlobal.hora_noche;
+                    actualizarUI_Tarjetas();
+                });
             });
 
-            // Escuchar Tickets y Asistencias
+            // Escuchar Tickets y Asistencias de HOY
             db.ref('sistema').on('value', snap => {
                 const data = snap.val() || {};
-                const viajes = data.viajes ? data.viajes[fecha] : {};
-                const asistencias = (data.asistencias && data.asistencias[fecha]) ? data.asistencias[fecha] : {};
+                const viajes = data.viajes ? data.viajes[fechaHoy] : {};
+                const asistencias = (data.asistencias && data.asistencias[fechaHoy]) ? data.asistencias[fechaHoy] : {};
                 
                 let combined = []; let historyData = []; let ticketsTurnoActivo = 0;
 
