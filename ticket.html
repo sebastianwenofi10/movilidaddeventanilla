@@ -232,7 +232,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyBxaeAc2nq7iEeiLejvja3lKGwR4E09QS4",
             authDomain: "ventanilla-unac.firebaseapp.com",
-            databaseURL: "https://ventanilla-unac-default-rtdb.firebaseio.com", // Asegúrate de que esta URL sea la correcta (antes vi unac-ventanilla)
+            databaseURL: "https://unac-ventanilla-default-rtdb.firebaseio.com",
             projectId: "ventanilla-unac",
             storageBucket: "ventanilla-unac.appspot.com",
             messagingSenderId: "245380540222",
@@ -294,10 +294,12 @@
                     b.innerText = "🟢 DISPONIBLE";
                     b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 bg-green-500/20 text-green-400 border border-green-500 animate-pulse";
                     c.classList.remove('locked');
+                    c.style.pointerEvents = "auto";
                 } else {
                     b.innerText = "🔴 CERRADO";
                     b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 bg-red-900/50 text-red-400 border border-red-500";
                     c.classList.add('locked');
+                    c.style.pointerEvents = "none";
                 }
             },
 
