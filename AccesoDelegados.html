@@ -1,1 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UNAC | Panel Control Oficial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
+    <!-- LIBRERÍAS FIREBASE COMPAT -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --accent: #ffc107; --dark: #050505; --red-bg: #ef4444; --green-bg: #10b981; }
+        body { background-color: var(--dark); font-family: 'Inter', sans-serif; color: white; margin: 0; min-height: 100vh; }
+        .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px); border-radius: 20px; }
+        input { width: 100%; background: rgba(0,0,0,0.5) !important; border: 1px solid rgba(255,193,7,0.3) !important; color: white !important; padding: 15px; border-radius: 10px; margin-bottom: 15px; outline: none; text-align: center; }
+        .btn-gold { background: var(--accent); color: black; width: 100%; padding: 15px; border-radius: 10px; font-weight: 900; text-transform: uppercase; transition: 0.3s; cursor: pointer; }
+        #reader { width: 100% !important; border: none !important; border-radius: 15px; overflow: hidden; }
+        
+        #flash-notif { 
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            z-index: 9999; padding: 40px 60px; border-radius: 30px; font-weight: 900; 
+            text-align: center; display: none; border: 4px solid white; box-shadow: 0 0 100px rgba(0,0,0,0.8);
+            width: 90%; max-width: 400px;
+        }
+        .notif-success { background: var(--green-bg); }
+        .notif-error { background: var(--red-bg); }
+
+        .btn-horario { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #666; padding: 15px 5px; border-radius: 12px; font-weight: 900; text-transform: uppercase; font-size: 10px; transition: 0.3s; cursor: pointer; }
+        .active-6pm { background: #0284c7 !important; color: white !important; border-color: #38bdf8 !important; }
+        .active-10pm { background: #7c3aed !important; color: white !important; border-color: #a78bfa !important; }
+
+        #master-list-view { position: fixed; inset: 0; background: #050505; z-index: 1000; display: none; flex-direction: column; }
+        .student-card { border-left: 5px solid transparent; transition: 0.3s; margin-bottom: 8px; }
+        .status-red { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .status-green { border-color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        .badge-seat { background: #ffc107; color: black; padding: 2px 8px; border-radius: 5px; font-size: 8px; font-weight: 900; }
+        .badge-stand { background: #4b5563; color: white; padding: 2px 8px; border-radius: 5px; font-size: 8px; font-weight: 900; }
+        .history-item { background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 8px 12px; font-size: 10px; display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+
+    <div id="flash-notif">
+        <i id="flash-icon" class="fa-solid fa-circle-check text-7xl mb-4"></i><br>
+        <span id="flash-text" class="text-3xl uppercase italic tracking-tighter">--</span>
+        <p id="flash-subtext" class="text-sm mt-2 font-bold opacity-80 uppercase tracking-widest"></p>
+    </div>
+
+    <!-- VISTA DE LISTA MAESTRA -->
+    <div id="master-list-view">
+        <header class="p-6 border-b border-white/10 flex justify-between items-center bg-black">
+            <div>
+                <h3 class="text-xl font-black text-yellow-500 uppercase italic">Registro de Pasajeros</h3>
+                <p class="text-[9px] text-gray-500 uppercase tracking-widest">Sincronizado con Firebase</p>
+            </div>
+            <button onclick="toggleLista(false)" class="bg-white/10 w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl hover:bg-red-600 transition">&times;</button>
+        </header>
+        <div id="contenedor-lista-maestra" class="flex-grow overflow-y-auto p-4">
+            <p class="text-center text-gray-600 py-10 italic">Cargando base de datos...</p>
+        </div>
+    </div>
+
+    <div id="main-app" class="flex flex-col items-center w-full">
+        <header class="w-full max-w-lg p-6 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-yellow-500 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-user-shield text-black text-lg"></i></div>
+                <div class="flex flex-col text-left leading-none uppercase">
+                    <span class="text-[10px] font-black tracking-widest">UNAC</span>
+                    <span class="text-[9px] text-yellow-500 font-bold">Delegados</span>
+                </div>
+            </div>
+            <button onclick="cerrarSesion()" class="text-[10px] font-black text-gray-500 uppercase">Salir <i class="fa-solid fa-xmark"></i></button>
+        </header>
+
+        <!-- LOGIN -->
+        <div id="login-container" class="w-full max-w-sm px-6 mt-10 text-center">
+            <div class="mb-8">
+                <h1 class="text-3xl font-black uppercase italic tracking-tighter">Acceso <span class="text-yellow-500">Privado</span></h1>
+                <p class="text-gray-500 text-[10px] tracking-widest uppercase mt-2">Seguridad Ruta Ventanilla</p>
+            </div>
+            <div class="glass p-8 text-left">
+                <label class="text-[9px] font-black text-yellow-500 uppercase tracking-widest">DNI Delegado</label>
+                <input type="text" id="userDni" placeholder="7XXXXXXX">
+                <label class="text-[9px] font-black text-yellow-500 uppercase tracking-widest">Contraseña</label>
+                <input type="password" id="userPass" placeholder="••••••••">
+                <button onclick="intentarLogin()" class="btn-gold mt-4 shadow-xl">Entrar al Sistema</button>
+            </div>
+        </div>
+
+        <!-- PANEL SCANNER -->
+        <div id="scanner-container" class="w-full max-w-lg px-4 py-4 hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-black uppercase">Control <span class="text-yellow-500">Ruta</span></h2>
+                <button onclick="toggleLista(true)" class="bg-yellow-500 text-black text-[10px] font-black px-5 py-2.5 rounded-xl uppercase shadow-lg">
+                    <i class="fa-solid fa-list-ul mr-2"></i> Ver Lista Maestra
+                </button>
+            </div>
+
+            <div class="glass p-4 mb-6"><div id="reader"></div></div>
+
+            <div class="grid grid-cols-3 gap-2 mb-6 text-center">
+                <div class="glass p-3 border-b-2 border-yellow-500">
+                    <span class="text-[7px] text-gray-500 uppercase font-black block">Mis Escaneos</span>
+                    <span id="contador-mi" class="text-2xl font-black text-yellow-500">0</span>
+                </div>
+                <div class="glass p-3 border-b-2 border-orange-500">
+                    <span class="text-[7px] text-gray-500 uppercase font-black block">Tickets</span>
+                    <span id="contador-sol" class="text-2xl font-black text-orange-500">0</span>
+                </div>
+                <div class="glass p-3 border-b-2 border-blue-500 relative">
+                    <span class="text-[7px] text-gray-500 uppercase font-black block">Abordados</span>
+                    <span id="contador-glo" class="text-2xl font-black text-blue-500">0</span>
+                </div>
+            </div>
+
+            <div class="glass p-4 mb-6">
+                <span class="text-[10px] font-black uppercase text-yellow-500 italic mb-3 block">Últimos Abordados</span>
+                <div id="historial-reciente" class="max-h-[140px] overflow-y-auto rounded-lg">
+                    <p class="text-center text-[10px] text-gray-600 py-4 italic">Esperando escaneos...</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <button id="btn-tarde" onclick="toggleTurno('tarde')" class="btn-horario">Ticket 18:00</button>
+                <button id="btn-noche" onclick="toggleTurno('noche')" class="btn-horario">Ticket 22:15</button>
+            </div>
+
+            <!-- BOTONES EXCEL -->
+            <div class="grid grid-cols-1 gap-3 mb-4">
+                <button onclick="sincronizarConExcel()" class="w-full bg-green-700 text-white font-black py-4 rounded-xl uppercase text-[10px] border-2 border-green-500 shadow-lg">
+                    <i class="fa-solid fa-rotate mr-2"></i> 1. Sincronizar Firebase -> Excel
+                </button>
+                <button onclick="window.open('https://docs.google.com/spreadsheets/d/1xRxxFTv6732nu0_g_ZxZ--Kw63bv5xBS_81P-50p_qs/edit?usp=sharing', '_blank')" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase text-[10px] shadow-lg">
+                    <i class="fa-solid fa-file-excel mr-2"></i> 2. Ver Reporte Excel
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-10">
+                <button onclick="localStorage.clear(); location.reload();" class="w-full bg-orange-600 text-white font-black py-4 rounded-xl uppercase text-[10px]">Borrar Cache</button>
+                <button onclick="reiniciarFirebase()" class="w-full bg-red-600 text-white font-black py-4 rounded-xl uppercase text-[10px]">Reset Sistema</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const URL_GAS = "https://script.google.com/macros/s/AKfycbyuM2lbXzvHwY9r_xxGMYfiUjEjMMDATw1uMYxsgtec5CxcS3qcX9_v_QbjdxVV4wU/exec";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxaeAc2nq7iEeiLejvja3lKGwR4E09QS4",
+            authDomain: "ventanilla-unac.firebaseapp.com",
+            databaseURL: "https://ventanilla-unac-default-rtdb.firebaseio.com",
+            projectId: "ventanilla-unac",
+            storageBucket: "ventanilla-unac.appspot.com",
+            messagingSenderId: "245380540222",
+            appId: "1:245380540222:web:d4ea08b7818bf89d682e6f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const soundOk = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        const soundError = new Audio('https://www.soundjay.com/buttons/beep-05.mp3');
+
+        let delegadoActivo = localStorage.getItem('unac_session_dni') || "";
+        const DELEGADOS = ["7188634", "77570731"];
+
+        window.onload = function() {
+            if (delegadoActivo !== "") {
+                document.getElementById('login-container').classList.add('hidden');
+                document.getElementById('scanner-container').classList.remove('hidden');
+                iniciarSistema();
+            }
+        };
+
+        function intentarLogin() {
+            const dni = document.getElementById('userDni').value.trim();
+            if (DELEGADOS.includes(dni) && dni === document.getElementById('userPass').value.trim()) {
+                delegadoActivo = dni;
+                localStorage.setItem('unac_session_dni', dni);
+                location.reload();
+            } else { alert("DNI o contraseña incorrecta"); }
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('unac_session_dni');
+            location.reload();
+        }
+
+        db.ref('sistema/config').on('value', snap => {
+            const data = snap.val() || {};
+            document.getElementById('btn-tarde').className = data.tarde_activo ? 'btn-horario active-6pm' : 'btn-horario';
+            document.getElementById('btn-noche').className = data.noche_activo ? 'btn-horario active-10pm' : 'btn-horario';
+        });
+
+        async function sincronizarConExcel() {
+            const fecha = new Date().toISOString().split('T')[0];
+            const snap = await db.ref(`sistema/viajes/${fecha}`).once('value');
+            if(!snap.exists()) return alert("No hay datos hoy.");
+
+            let lista = [];
+            const data = snap.val();
+            Object.keys(data).forEach(turno => {
+                const registros = data[turno].registros;
+                if(registros) {
+                    Object.keys(registros).forEach(dni => {
+                        lista.push({ dni: dni, nombre: registros[dni].nombre, orden: registros[dni].orden, turno: turno.toUpperCase() });
+                    });
+                }
+            });
+            lista.sort((a,b) => a.orden - b.orden);
+            notificarFlash("SINCRONIZANDO", "success", "Exportando al Excel...");
+            fetch(`${URL_GAS}?accion=sincronizar_base&lista=${encodeURIComponent(JSON.stringify(lista))}`)
+            .then(() => alert("Sincronización Exitosa"));
+        }
+
+        function iniciarSistema() {
+            const fecha = new Date().toISOString().split('T')[0];
+            const scanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: 250 });
+            scanner.render(onScanSuccess);
+
+            db.ref('sistema').on('value', snap => {
+                const data = snap.val() || {};
+                const viajes = data.viajes ? data.viajes[fecha] : {};
+                const asistencias = (data.asistencias && data.asistencias[fecha]) ? data.asistencias[fecha] : {};
+                
+                let combined = [];
+                let historyData = [];
+
+                ['mañana', 'tarde', 'noche'].forEach(turno => {
+                    const tReg = viajes[turno] ? viajes[turno].registros : null;
+                    if (tReg) {
+                        Object.keys(tReg).forEach(dni => {
+                            const verificado = asistencias[dni] ? true : false;
+                            combined.push({
+                                dni: dni, nombre: tReg[dni].nombre,
+                                hora: tReg[dni].hora, orden: tReg[dni].orden || 999,
+                                turno: turno.toUpperCase(), verificado: verificado
+                            });
+                            if(verificado) {
+                                historyData.push({ nombre: tReg[dni].nombre, hora: asistencias[dni].hora, delegado: asistencias[dni].delegado });
+                            }
+                        });
+                    }
+                });
+
+                combined.sort((a, b) => a.orden - b.orden);
+                document.getElementById('contador-sol').innerText = combined.length;
+                document.getElementById('contador-glo').innerText = Object.keys(asistencias).length;
+                document.getElementById('contador-mi').innerText = Object.values(asistencias).filter(a => a.delegado === delegadoActivo).length;
+
+                renderMasterList(combined);
+                renderHistorial(historyData);
+            });
+        }
+
+        function renderHistorial(lista) {
+            const container = document.getElementById('historial-reciente');
+            lista.sort((a,b) => b.hora.localeCompare(a.hora));
+            if(lista.length === 0) { container.innerHTML = "<p class='text-center text-[10px] text-gray-600 py-4 italic'>Sin abordajes...</p>"; return; }
+            container.innerHTML = lista.slice(0, 10).map(item => `
+                <div class="history-item">
+                    <div class="flex flex-col"><span class="font-bold text-white uppercase text-[9px]">${item.nombre}</span><span class="text-[7px] text-yellow-500 uppercase">Delegado: ${item.delegado}</span></div>
+                    <span class="font-black text-green-500 text-[10px]">${item.hora}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderMasterList(students) {
+            const container = document.getElementById('contenedor-lista-maestra');
+            if(students.length === 0) { container.innerHTML = "<p class='text-center text-gray-500 py-10'>No hay tickets.</p>"; return; }
+            container.innerHTML = students.map(s => {
+                const hasSeat = s.orden <= 40;
+                return `
+                    <div class="p-4 rounded-xl student-card ${s.verificado ? 'status-green' : 'status-red'} flex justify-between items-center glass">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="${hasSeat ? 'badge-seat' : 'badge-stand'}">${hasSeat ? 'ASIENTO' : 'PARADO'}</span>
+                                <p class="text-[11px] font-black uppercase text-white">${s.nombre}</p>
+                            </div>
+                            <div class="flex gap-4 mt-1">
+                                <span class="text-[9px] font-bold text-yellow-500"><i class="fa-solid fa-clock"></i> TICKET: ${s.hora}</span>
+                                <span class="text-[9px] font-bold text-blue-400"><i class="fa-solid fa-bus"></i> TURNO: ${s.turno}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] font-black ${s.verificado ? 'text-green-500' : 'text-red-500'} uppercase">
+                                ${s.verificado ? 'LISTO' : 'ESPERA'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function onScanSuccess(text) {
+            let dniScanned = ""; let tKey = "";
+            if (text.includes(':')) {
+                const parts = text.split(':');
+                dniScanned = parts[1];
+                tKey = parts[0].includes('-T') ? 'tarde' : (parts[0].includes('-N') ? 'noche' : 'mañana');
+            } else if (text.includes('-')) {
+                const parts = text.split('-');
+                dniScanned = parts[2];
+                tKey = parts[3].toLowerCase() === 't' ? 'tarde' : (parts[3].toLowerCase() === 'n' ? 'noche' : 'mañana');
+            }
+            if(!dniScanned) return;
+
+            const fechaHoy = new Date().toISOString().split('T')[0];
+            const snapTicket = await db.ref(`sistema/viajes/${fechaHoy}/${tKey}/registros/${dniScanned}`).once('value');
+            if(!snapTicket.exists()) return notificarFlash("SIN TICKET", "error", "No registrado");
+
+            const snapAsis = await db.ref(`sistema/asistencias/${fechaHoy}/${dniScanned}`).once('value');
+            if(snapAsis.exists()) return notificarFlash("YA ESCANEADO", "error", "Ya abordó");
+
+            const nombre = snapTicket.val().nombre;
+            db.ref(`sistema/asistencias/${fechaHoy}/${dniScanned}`).set({ nombre: nombre, hora: new Date().toLocaleTimeString(), delegado: delegadoActivo });
+            fetch(`${URL_GAS}?accion=marcar_asistencia&dni=${dniScanned}&delegado=${delegadoActivo}`).catch(() => {});
+
+            soundOk.play();
+            notificarFlash("VERIFICADO ✅", "success", nombre);
+        }
+
+        function toggleLista(show) { document.getElementById('master-list-view').style.display = show ? 'flex' : 'none'; }
+        function notificarFlash(titulo, tipo, sub) {
+            const f = document.getElementById('flash-notif'), t = document.getElementById('flash-text'), st = document.getElementById('flash-subtext'), i = document.getElementById('flash-icon');
+            t.innerText = titulo; st.innerText = sub;
+            f.className = tipo === "success" ? "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 notif-success glass" : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 notif-error glass";
+            i.className = tipo === "success" ? "fa-solid fa-circle-check text-7xl mb-4" : "fa-solid fa-circle-xmark text-7xl mb-4";
+            if(tipo === "error") soundError.play();
+            f.style.display = 'block'; setTimeout(() => f.style.display = 'none', 2500);
+        }
+        function toggleTurno(t) {
+            const ref = db.ref(`sistema/config/${t}_activo`);
+            ref.once('value', s => ref.set(!s.val()));
+        }
+        async function reiniciarFirebase() {
+            if(confirm("¿Reiniciar todo hoy?")) {
+                const fecha = new Date().toISOString().split('T')[0];
+                await db.ref(`sistema/viajes/${fecha}`).remove();
+                await db.ref(`sistema/asistencias/${fecha}`).remove();
+                fetch(`${URL_GAS}?accion=reiniciar_sistema`).catch(() => {});
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
