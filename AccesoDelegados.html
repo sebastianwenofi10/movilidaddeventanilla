@@ -71,10 +71,10 @@
             <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left">Cantidad Total de Asientos (Cupo Máximo)</label>
             <input type="number" id="cfg-cupos" placeholder="Ej: 40">
 
-            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mt-2">Hora Programada: Turno Tarde</label>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mt-2">Hora Programada Tarde <span class="text-red-500 text-[8px]">(Vacío = Manual)</span></label>
             <input type="time" id="cfg-hora-tarde" class="text-2xl">
 
-            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mt-2">Hora Programada: Turno Noche</label>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mt-2">Hora Programada Noche <span class="text-red-500 text-[8px]">(Vacío = Manual)</span></label>
             <input type="time" id="cfg-hora-noche" class="text-2xl">
 
             <button onclick="guardarAjustes()" class="btn-gold shadow-lg mt-2"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
@@ -147,8 +147,8 @@
                         <div id="badge-tarde" class="badge-status badge-off">🔴 Inactivo</div>
                         <i class="fa-solid fa-cloud-sun text-2xl text-blue-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Turno Tarde</h4>
-                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Apertura: <span id="lbl-hora-tarde" class="text-yellow-500 font-bold">18:00</span></p>
-                        <button onclick="toggleTurno('tarde')" id="btn-tarde" class="w-full bg-white/10 hover:bg-blue-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar</button>
+                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Programa: <span id="lbl-hora-tarde" class="text-yellow-500 font-bold">--:--</span></p>
+                        <button onclick="toggleTurno('tarde')" id="btn-tarde" class="w-full bg-white/10 hover:bg-blue-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar Manual</button>
                     </div>
 
                     <!-- TURNO NOCHE -->
@@ -156,8 +156,8 @@
                         <div id="badge-noche" class="badge-status badge-off">🔴 Inactivo</div>
                         <i class="fa-solid fa-moon text-2xl text-purple-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Turno Noche</h4>
-                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Apertura: <span id="lbl-hora-noche" class="text-yellow-500 font-bold">22:15</span></p>
-                        <button onclick="toggleTurno('noche')" id="btn-noche" class="w-full bg-white/10 hover:bg-purple-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar</button>
+                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Programa: <span id="lbl-hora-noche" class="text-yellow-500 font-bold">--:--</span></p>
+                        <button onclick="toggleTurno('noche')" id="btn-noche" class="w-full bg-white/10 hover:bg-purple-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar Manual</button>
                     </div>
                 </div>
                 <!-- Barra de capacidad -->
@@ -248,12 +248,12 @@
         const soundOk = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         const soundError = new Audio('https://www.soundjay.com/buttons/beep-05.mp3');
 
-        // SEGURIDAD
         let delegadoActivo = localStorage.getItem('unac_session_dni') || "";
         const DELEGADOS = ["71886034", "77570731"];
 
         let listaGlobalAlumnos = []; 
-        let configGlobal = { cupos: 40, hora_tarde: '18:00', hora_noche: '22:15', tarde_activo: false, noche_activo: false };
+        let configGlobal = { cupos: 40, hora_tarde: '', hora_noche: '', tarde_activo: false, noche_activo: false };
+        let serverTimeOffset = 0; // Control de tiempo contra hackers
 
         window.onload = function() {
             if (delegadoActivo !== "") {
@@ -276,88 +276,159 @@
         function cerrarSesion() { localStorage.removeItem('unac_session_dni'); location.reload(); }
 
         // ==========================================
-        // CONFIGURACIONES
+        // CONFIGURACIONES Y SINCRONIZACIÓN VISUAL
         // ==========================================
         function abrirAjustes() {
             document.getElementById('cfg-cupos').value = configGlobal.cupos;
-            document.getElementById('cfg-hora-tarde').value = configGlobal.hora_tarde;
-            document.getElementById('cfg-hora-noche').value = configGlobal.hora_noche;
+            document.getElementById('cfg-hora-tarde').value = configGlobal.hora_tarde || "";
+            document.getElementById('cfg-hora-noche').value = configGlobal.hora_noche || "";
             document.getElementById('modal-ajustes').style.display = 'flex';
         }
         function cerrarAjustes() { document.getElementById('modal-ajustes').style.display = 'none'; }
         
         function guardarAjustes() {
-            const c = parseInt(document.getElementById('cfg-cupos').value);
-            const ht = document.getElementById('cfg-hora-tarde').value;
-            const hn = document.getElementById('cfg-hora-noche').value;
+            const c = parseInt(document.getElementById('cfg-cupos').value) || 40;
+            const ht = document.getElementById('cfg-hora-tarde').value || ""; // Si está vacío se borra la auto-activación
+            const hn = document.getElementById('cfg-hora-noche').value || "";
             
             db.ref('sistema/config').update({ cupos_maximos: c, hora_tarde: ht, hora_noche: hn });
             notificarFlash("GUARDADO", "success", "Ajustes actualizados");
             cerrarAjustes();
         }
 
+        // NUEVA FUNCIÓN DE ACTUALIZACIÓN INTELIGENTE DE TARJETAS
         function actualizarUI_Tarjetas() {
-            // TARDE
+            const now = new Date(Date.now() + serverTimeOffset);
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+
+            const parseTime = (timeStr) => {
+                if(!timeStr) return 9999; // Si no hay hora, nunca se activa solo
+                const p = timeStr.split(':');
+                return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+            };
+
+            const tTarde = parseTime(configGlobal.hora_tarde);
+            const tNoche = parseTime(configGlobal.hora_noche);
+
+            const isTardeTime = (currentMins >= tTarde && currentMins < tNoche);
+            const isNocheTime = (currentMins >= tNoche);
+
+            const isTardeActive = configGlobal.tarde_activo || isTardeTime;
+            const isNocheActive = configGlobal.noche_activo || isNocheTime;
+
+            // UI TARDE
             const cTarde = document.getElementById('card-tarde');
             const bTarde = document.getElementById('badge-tarde');
             const btnTarde = document.getElementById('btn-tarde');
-            if(configGlobal.tarde_activo) {
-                cTarde.classList.add('active'); bTarde.className = 'badge-status badge-on'; bTarde.innerText = '🟢 Activo';
-                btnTarde.innerText = 'Cerrar Turno'; btnTarde.className = 'w-full bg-red-600 hover:bg-red-500 py-2 rounded font-black text-[9px] uppercase transition';
+            document.getElementById('lbl-hora-tarde').innerText = configGlobal.hora_tarde || 'MANUAL';
+            
+            if(isTardeActive) {
+                cTarde.classList.add('active'); 
+                bTarde.className = 'badge-status badge-on'; 
+                bTarde.innerText = isTardeTime ? '🟢 PROG. ACTIVO' : '🟢 ACTIVO';
+                btnTarde.innerText = 'Cerrar / Desactivar'; 
+                btnTarde.className = 'w-full bg-red-600 hover:bg-red-500 py-2 rounded font-black text-[9px] uppercase transition shadow-lg';
             } else {
-                cTarde.classList.remove('active'); bTarde.className = 'badge-status badge-off'; bTarde.innerText = '🔴 Inactivo';
-                btnTarde.innerText = 'Activar Manual'; btnTarde.className = 'w-full bg-white/10 hover:bg-blue-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition';
+                cTarde.classList.remove('active'); 
+                bTarde.className = 'badge-status badge-off'; 
+                bTarde.innerText = '🔴 Inactivo';
+                btnTarde.innerText = 'Activar Manual'; 
+                btnTarde.className = 'w-full bg-white/10 hover:bg-blue-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition';
             }
 
-            // NOCHE
+            // UI NOCHE
             const cNoche = document.getElementById('card-noche');
             const bNoche = document.getElementById('badge-noche');
             const btnNoche = document.getElementById('btn-noche');
-            if(configGlobal.noche_activo) {
-                cNoche.classList.add('active'); bNoche.className = 'badge-status badge-on'; bNoche.innerText = '🟢 Activo';
-                btnNoche.innerText = 'Cerrar Turno'; btnNoche.className = 'w-full bg-red-600 hover:bg-red-500 py-2 rounded font-black text-[9px] uppercase transition';
+            document.getElementById('lbl-hora-noche').innerText = configGlobal.hora_noche || 'MANUAL';
+
+            if(isNocheActive) {
+                cNoche.classList.add('active'); 
+                bNoche.className = 'badge-status badge-on'; 
+                bNoche.innerText = isNocheTime ? '🟢 PROG. ACTIVO' : '🟢 ACTIVO';
+                btnNoche.innerText = 'Cerrar / Desactivar'; 
+                btnNoche.className = 'w-full bg-red-600 hover:bg-red-500 py-2 rounded font-black text-[9px] uppercase transition shadow-lg';
             } else {
-                cNoche.classList.remove('active'); bNoche.className = 'badge-status badge-off'; bNoche.innerText = '🔴 Inactivo';
-                btnNoche.innerText = 'Activar Manual'; btnNoche.className = 'w-full bg-white/10 hover:bg-purple-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition';
+                cNoche.classList.remove('active'); 
+                bNoche.className = 'badge-status badge-off'; 
+                bNoche.innerText = '🔴 Inactivo';
+                btnNoche.innerText = 'Activar Manual'; 
+                btnNoche.className = 'w-full bg-white/10 hover:bg-purple-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition';
             }
         }
 
         function toggleTurno(t) {
-            const estadoActual = t === 'tarde' ? configGlobal.tarde_activo : configGlobal.noche_activo;
-            db.ref(`sistema/config/${t}_activo`).set(!estadoActual);
+            const now = new Date(Date.now() + serverTimeOffset);
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+            const parseTime = (timeStr) => {
+                if(!timeStr) return 9999;
+                const p = timeStr.split(':');
+                return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+            };
+
+            const tTarde = parseTime(configGlobal.hora_tarde);
+            const tNoche = parseTime(configGlobal.hora_noche);
+
+            const isTardeTime = (currentMins >= tTarde && currentMins < tNoche);
+            const isNocheTime = (currentMins >= tNoche);
+
+            let isTimeActive = (t === 'tarde') ? isTardeTime : isNocheTime;
+            let isManualActive = (t === 'tarde') ? configGlobal.tarde_activo : configGlobal.noche_activo;
+            
+            // Si estaba activo (ya sea manual o por reloj), lo cerramos
+            if (isTimeActive || isManualActive) {
+                db.ref(`sistema/config/${t}_activo`).set(false);
+                if (isTimeActive) {
+                    // Si estaba activo por hora, borramos la hora para forzar el cierre real
+                    db.ref(`sistema/config/hora_${t}`).set('');
+                    notificarFlash("CIERRE FORZADO", "error", "Hora programada eliminada");
+                } else {
+                    notificarFlash("TURNO CERRADO", "error", "Cierre manual");
+                }
+            } else {
+                // Si estaba apagado, lo prendemos manual
+                db.ref(`sistema/config/${t}_activo`).set(true);
+                notificarFlash("TURNO ABIERTO", "success", "Apertura manual");
+            }
         }
 
         // ==========================================
-        // INICIO, AUTO-RESETEO Y SINCRONIZACIÓN
+        // INICIO Y EVALUACIÓN PRINCIPAL
         // ==========================================
         function iniciarSistema() {
             const fechaHoy = new Date().toISOString().split('T')[0];
             const scanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 });
             scanner.render(onScanSuccess);
 
-            // NUEVO: AUTO-RESETEO SI ES UN NUEVO DÍA
+            // Obtener diferencia de hora con Google
+            db.ref('.info/serverTimeOffset').on('value', snap => {
+                serverTimeOffset = snap.val() || 0;
+                actualizarUI_Tarjetas();
+            });
+
+            // Revisar cada 15 segundos si se alcanzó una hora programada para prender las tarjetas
+            setInterval(actualizarUI_Tarjetas, 15000);
+
+            // Auto-reseteo de día
             db.ref('sistema/config').once('value', snap => {
                 let data = snap.val() || {};
-                // Si la fecha guardada es distinta a hoy (o no existe) apagamos todo
                 if (data.fecha_sistema !== fechaHoy) {
                     db.ref('sistema/config').update({
-                        tarde_activo: false,
-                        noche_activo: false,
+                        tarde_activo: false, noche_activo: false,
+                        hora_tarde: '', hora_noche: '', // Borramos la programación anterior
                         fecha_sistema: fechaHoy
                     });
                 }
                 
-                // Una vez comprobado y limpiado, escuchamos los cambios en tiempo real
+                // Escuchamos la configuración en tiempo real
                 db.ref('sistema/config').on('value', snapRealtime => {
                     const dataRT = snapRealtime.val() || {};
                     configGlobal.cupos = dataRT.cupos_maximos || 40;
-                    configGlobal.hora_tarde = dataRT.hora_tarde || '18:00';
-                    configGlobal.hora_noche = dataRT.hora_noche || '22:15';
+                    configGlobal.hora_tarde = dataRT.hora_tarde || '';
+                    configGlobal.hora_noche = dataRT.hora_noche || '';
                     configGlobal.tarde_activo = dataRT.tarde_activo || false;
                     configGlobal.noche_activo = dataRT.noche_activo || false;
                     
-                    document.getElementById('lbl-hora-tarde').innerText = configGlobal.hora_tarde;
-                    document.getElementById('lbl-hora-noche').innerText = configGlobal.hora_noche;
                     actualizarUI_Tarjetas();
                 });
             });
@@ -370,11 +441,20 @@
                 
                 let combined = []; let historyData = []; let ticketsTurnoActivo = 0;
 
+                // Evaluación de tiempo para bloqueos
+                const now = new Date(Date.now() + serverTimeOffset);
+                const currentMins = now.getHours() * 60 + now.getMinutes();
+                const tTarde = (configGlobal.hora_tarde) ? parseInt(configGlobal.hora_tarde.split(':')[0])*60 + parseInt(configGlobal.hora_tarde.split(':')[1]) : 9999;
+                const tNoche = (configGlobal.hora_noche) ? parseInt(configGlobal.hora_noche.split(':')[0])*60 + parseInt(configGlobal.hora_noche.split(':')[1]) : 9999;
+
+                const isTardeActive = configGlobal.tarde_activo || (currentMins >= tTarde && currentMins < tNoche);
+                const isNocheActive = configGlobal.noche_activo || (currentMins >= tNoche);
+
                 ['tarde', 'noche'].forEach(turno => {
                     const tReg = viajes[turno] ? viajes[turno].registros : null;
                     if (tReg) {
                         let cantidad = Object.keys(tReg).length;
-                        if((turno === 'tarde' && configGlobal.tarde_activo) || (turno === 'noche' && configGlobal.noche_activo)){
+                        if((turno === 'tarde' && isTardeActive) || (turno === 'noche' && isNocheActive)){
                             ticketsTurnoActivo += cantidad;
                         }
 
@@ -389,15 +469,24 @@
                 combined.sort((a, b) => a.orden - b.orden);
                 listaGlobalAlumnos = combined;
 
-                // LÓGICA DE BLOQUEO AUTOMÁTICO DE CUPOS
+                // UI Barra de cupos
                 document.getElementById('txt-cupos').innerText = `${ticketsTurnoActivo} / ${configGlobal.cupos}`;
                 let porcentaje = (ticketsTurnoActivo / configGlobal.cupos) * 100;
                 document.getElementById('barra-cupos').style.width = `${Math.min(porcentaje, 100)}%`;
                 document.getElementById('barra-cupos').style.background = porcentaje >= 100 ? "#ef4444" : "#ffc107";
 
+                // CIERRE AUTOMÁTICO DE BUS LLENO (Apaga manual y borra la hora)
                 if(ticketsTurnoActivo >= configGlobal.cupos) {
-                    if(configGlobal.tarde_activo) { db.ref('sistema/config/tarde_activo').set(false); notificarFlash("BUS LLENO", "error", "Turno Tarde Cerrado"); }
-                    if(configGlobal.noche_activo) { db.ref('sistema/config/noche_activo').set(false); notificarFlash("BUS LLENO", "error", "Turno Noche Cerrado"); }
+                    if(isTardeActive) { 
+                        db.ref('sistema/config/tarde_activo').set(false); 
+                        db.ref('sistema/config/hora_tarde').set('');
+                        notificarFlash("BUS LLENO", "error", "Turno Tarde Cerrado"); 
+                    }
+                    if(isNocheActive) { 
+                        db.ref('sistema/config/noche_activo').set(false); 
+                        db.ref('sistema/config/hora_noche').set('');
+                        notificarFlash("BUS LLENO", "error", "Turno Noche Cerrado"); 
+                    }
                 }
 
                 document.getElementById('contador-glo').innerText = Object.keys(asistencias).length;
