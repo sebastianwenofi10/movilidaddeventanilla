@@ -172,20 +172,20 @@
                         <span id="badge-m" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 uppercase">Evaluando...</span>
                         <h3 class="shift-title text-white">Mañana</h3>
                         <div class="time-badge">SALIDA: 05:15 AM</div>
-                        <p class="delegate-msg text-yellow-500">Activación por Servidor (9 PM - 7 AM)</p>
+                        <p class="delegate-msg text-yellow-500">Autoactivación (9:00 PM - 7:00 AM)</p>
                     </div>
                     <div id="card-t" class="card-panorama" style="background-image: url('DSC07588-768x432.jpg');" onclick="Core.goToTarde()">
                         <span id="badge-t" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 uppercase">Evaluando...</span>
                         <h3 class="shift-title text-white">Tarde</h3>
-                        <div class="time-badge">SALIDA: 06:00 PM</div>
-                        <p class="delegate-msg text-yellow-500">Control por Delegado de Ruta</p>
+                        <div id="time-badge-t" class="time-badge">PROGRAMADO: 18:00</div>
+                        <p class="delegate-msg text-yellow-500">Sincronizado con Panel de Delegado</p>
                     </div>
                 </div>
                 <div id="card-n" class="card-panorama w-full" style="background-image: url('DSC07629-768x432.jpg');" onclick="Core.requestTicket('noche')">
                     <span id="badge-n" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 uppercase">Evaluando...</span>
                     <h3 class="shift-title text-white text-5xl">Noche</h3>
-                    <div class="time-badge">SALIDA: 10:15 PM</div>
-                    <p class="delegate-msg text-yellow-500">Control por Delegado de Ruta</p>
+                    <div id="time-badge-n" class="time-badge">PROGRAMADO: 22:15</div>
+                    <p class="delegate-msg text-yellow-500">Sincronizado con Panel de Delegado</p>
                 </div>
                 <!-- GLOBO 2 -->
                 <div id="globe-box-2"></div>
@@ -241,49 +241,88 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let tardeActivo = false, nocheActivo = false;
-        let serverTimeOffset = 0; // PARA PREVENIR QUE ADELANTEN LA HORA DEL CELULAR
+        let serverTimeOffset = 0;
 
         const Core = {
             alumno: null,
+            config: {},
+            viajesData: {},
+            currentMananaActive: false,
+            currentTardeActive: false,
+            currentNocheActive: false,
+
             init: function() { 
                 this.initThree('globe-box'); 
                 
-                // 1. Obtener la diferencia de tiempo real con el servidor de Google
-                db.ref('.info/serverTimeOffset').on('value', function(snapshot) {
-                    serverTimeOffset = snapshot.val() || 0;
+                // Obtener diferencia de tiempo real del servidor de Google para evitar hackers de reloj local
+                db.ref('.info/serverTimeOffset').on('value', snap => {
+                    serverTimeOffset = snap.val() || 0;
+                    this.checkSchedules();
                 });
 
                 this.listenFirebase(); 
                 
-                // Actualizar estado del Turno Mañana cada minuto para que se abra/cierre solo
-                setInterval(() => this.updateMananaShift(), 60000);
+                // Evaluar la hora cada 30 segundos de forma continua
+                setInterval(() => this.checkSchedules(), 30000);
             },
 
-            // Calcula la hora real sumando la diferencia del servidor, imposible de hackear cambiando la hora local
             getRealTime: function() {
                 return new Date(Date.now() + serverTimeOffset);
             },
 
-            updateMananaShift: function() {
-                const realDate = this.getRealTime();
-                const hour = realDate.getHours();
-                // Turno Mañana: Activo desde las 21:00 (9 PM) hasta las 06:59 (antes de las 7 AM)
-                const isMananaActive = (hour >= 21 || hour < 7);
-                this.upUI('badge-m', 'card-m', isMananaActive);
+            listenFirebase: function() {
+                // Escuchar configuración (Ajustes de horas del Panel del Delegado)
+                db.ref('sistema/config').on('value', snap => {
+                    this.config = snap.val() || {};
+                    this.checkSchedules();
+                });
+
+                // Escuchar cupos actuales (Para saber si el bus ya se llenó)
+                const hoy = new Date().toISOString().split('T')[0];
+                db.ref(`sistema/viajes/${hoy}`).on('value', snap => {
+                    this.viajesData = snap.val() || {};
+                    this.checkSchedules();
+                });
             },
 
-            listenFirebase: function() {
-                // Escuchar el panel del delegado
-                db.ref('sistema/config').on('value', snap => {
-                    const cfg = snap.val() || {};
-                    tardeActivo = !!cfg.tarde_activo;
-                    nocheActivo = !!cfg.noche_activo;
-                    
-                    this.updateMananaShift(); // Actualiza mañana
-                    this.upUI('badge-t', 'card-t', tardeActivo); // Actualiza tarde guiado por delegado
-                    this.upUI('badge-n', 'card-n', nocheActivo); // Actualiza noche guiado por delegado
-                });
+            checkSchedules: function() {
+                if (!this.config) return;
+
+                const now = this.getRealTime();
+                const currentMins = now.getHours() * 60 + now.getMinutes(); // Minutos totales del día
+
+                const parseTime = (t) => {
+                    if(!t) return 9999;
+                    const p = t.split(':');
+                    return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+                };
+
+                const tTarde = parseTime(this.config.hora_tarde || '18:00');
+                const tNoche = parseTime(this.config.hora_noche || '22:15');
+                const maxCupos = this.config.cupos_maximos || 40;
+
+                const countTarde = (this.viajesData && this.viajesData.tarde) ? this.viajesData.tarde.contador || 0 : 0;
+                const countNoche = (this.viajesData && this.viajesData.noche) ? this.viajesData.noche.contador || 0 : 0;
+
+                // 1. MAÑANA: Fijo de 9:00 PM (1260 mins) a 6:59 AM (419 mins)
+                this.currentMananaActive = (currentMins >= 1260 || currentMins < 420);
+                
+                // 2. TARDE: Manual Activo OR (Dentro del horario programado)
+                this.currentTardeActive = this.config.tarde_activo || (currentMins >= tTarde && currentMins < tNoche);
+                if (countTarde >= maxCupos) this.currentTardeActive = false; // Bloqueo de seguridad si está lleno
+
+                // 3. NOCHE: Manual Activo OR (Dentro del horario programado hasta medianoche)
+                this.currentNocheActive = this.config.noche_activo || (currentMins >= tNoche);
+                if (countNoche >= maxCupos) this.currentNocheActive = false; // Bloqueo de seguridad si está lleno
+
+                // Actualizar Textos Dinámicos de Horas Programadas
+                if(document.getElementById('time-badge-t')) document.getElementById('time-badge-t').innerText = "PROGRAMADO: " + (this.config.hora_tarde || '18:00');
+                if(document.getElementById('time-badge-n')) document.getElementById('time-badge-n').innerText = "PROGRAMADO: " + (this.config.hora_noche || '22:15');
+
+                // Actualizar estado visual de las Tarjetas
+                this.upUI('badge-m', 'card-m', this.currentMananaActive);
+                this.upUI('badge-t', 'card-t', this.currentTardeActive);
+                this.upUI('badge-n', 'card-n', this.currentNocheActive);
             },
 
             upUI: function(bid, cid, act) {
@@ -310,7 +349,6 @@
                 const overlay = document.getElementById('scanning-overlay'), msg = document.getElementById('loader-msg'), bar = document.getElementById('progress-bar');
                 overlay.style.display = 'flex';
                 
-                // HUD 8 SEGUNDOS REALES (Sensación tecnológica)
                 const steps = [
                     {p:"25%",t:"VERIFICANDO HORA DE SERVIDOR..."},
                     {p:"50%",t:"BUSCANDO IDENTIDAD EN PADRÓN..."},
@@ -332,11 +370,9 @@
                         document.getElementById('step-1').classList.add('hidden-section');
                         document.getElementById('step-2').classList.remove('hidden-section');
                         
-                        // CARGAR DATOS COMPLETOS
                         document.getElementById('userName').innerText = this.alumno.Estudiante || "Estudiante UNAC";
                         document.getElementById('userFac').innerText = this.alumno.Facultad || "Facultad No Registrada";
                         document.getElementById('userDni').innerText = dni;
-                        // Si en la base de datos se llama distinto a 'Codigo', cámbialo aquí abajo
                         document.getElementById('userCod').innerText = this.alumno.Codigo || this.alumno.codigo || "S/C"; 
                         
                         this.initThree('globe-box-2');
@@ -361,26 +397,23 @@
                 }).then((r) => { if (r.isConfirmed) window.location.href = "registro.html"; });
             },
 
-            // REDIRECCIÓN HACIA EL CÓDIGO 3 (turnotarde.html) - SOLO SI EL DELEGADO LO ABRIÓ
+            // REDIRECCIÓN HACIA EL CÓDIGO 3 (turnotarde.html)
             goToTarde: function() {
-                if (tardeActivo && this.alumno) {
+                if (this.currentTardeActive && this.alumno) {
                     sessionStorage.setItem('valid_session', 'true'); 
                     sessionStorage.setItem('auth_timestamp', Date.now());
                     window.location.href = "turnotarde.html";
                 } else {
-                    Swal.fire({icon: 'error', title: 'Turno Cerrado', text: 'El delegado de ruta aún no ha habilitado este turno.', background: '#111', color: '#fff'});
+                    Swal.fire({icon: 'error', title: 'Turno Cerrado', text: 'El turno tarde no está disponible o ya alcanzó el límite de cupos.', background: '#111', color: '#fff'});
                 }
             },
 
             requestTicket: function(turno) {
-                // DOBLE VALIDACIÓN DE SEGURIDAD (Por si hackean el CSS)
-                if (turno === 'mañana') {
-                    const h = this.getRealTime().getHours();
-                    if (!(h >= 21 || h < 7)) return Swal.fire('Acceso Denegado', 'El turno mañana solo se habilita de 9:00 PM a 7:00 AM.', 'error');
-                }
-                if (turno === 'noche' && !nocheActivo) return Swal.fire('Cerrado', 'El delegado aún no habilita el turno noche.', 'error');
+                // VALIDACIÓN DE SEGURIDAD ESTRICTA ANTES DE EMITIR
+                if (turno === 'mañana' && !this.currentMananaActive) return Swal.fire('Acceso Denegado', 'El turno mañana solo se habilita de 9:00 PM a 7:00 AM.', 'error');
+                if (turno === 'noche' && !this.currentNocheActive) return Swal.fire('Cerrado', 'El turno noche no está disponible o ya alcanzó el límite de cupos.', 'error');
 
-                const fecha = this.getRealTime().toISOString().split('T')[0]; // Fecha real
+                const fecha = this.getRealTime().toISOString().split('T')[0]; 
                 const ruta = `sistema/viajes/${fecha}/${turno}`;
                 
                 document.getElementById('scanning-overlay').style.display = 'flex';
@@ -409,7 +442,7 @@
                 document.getElementById('t-fecha').innerText = this.getRealTime().toLocaleDateString('es-PE', fOpc).toUpperCase();
                 
                 const area = document.getElementById('seat-area');
-                if (data.orden <= 40) {
+                if (data.orden <= (this.config.cupos_maximos || 40)) {
                     area.innerText = data.orden.toString().padStart(2,'0');
                     area.style.color = "#000";
                 } else {
@@ -419,8 +452,7 @@
                 }
 
                 document.getElementById('qrcode-vip').innerHTML = "";
-                // FORMATO EXACTO PARA EL ESCÁNER DEL DELEGADO: UNAC-V-DNI-T-ORDEN
-                const turnoLetra = turno.charAt(0).toUpperCase(); // 'M', 'T', o 'N'
+                const turnoLetra = turno.charAt(0).toUpperCase(); 
                 const qrText = `UNAC-V-${this.alumno.dni}-${turnoLetra}-${data.orden}`;
                 new QRCode(document.getElementById("qrcode-vip"), { text: qrText, width: 220, height: 220, colorDark: "#000000", colorLight: "#ffffff", correctLevel : QRCode.CorrectLevel.H });
                 
