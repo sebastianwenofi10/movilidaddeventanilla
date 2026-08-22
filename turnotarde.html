@@ -138,7 +138,7 @@
                         <!-- FECHA -->
                         <p id="t-fecha" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"></p>
                         
-                        <!-- ESTADO DE ASIENTO (Dinámico Verde o Naranja) -->
+                        <!-- ESTADO DE ASIENTO (Dinámico Verde o Naranja, SIN NÚMERO) -->
                         <div id="seat-badge" class="bg-green-100 border-2 border-green-400 text-green-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mb-6 mx-auto w-max">
                             <i id="seat-icon" class="fa-solid fa-chair text-2xl"></i>
                             <span id="seat-area" class="text-3xl font-black uppercase tracking-tighter font-['Montserrat']">--</span>
@@ -378,13 +378,13 @@
                 const area = document.getElementById('seat-area');
                 const icon = document.getElementById('seat-icon');
 
-                // Lógica Visual del Asiento (Verde o Naranja)
+                // Lógica Visual del Asiento (Verde o Naranja) SIN NÚMERO
                 db.ref('sistema/config/cupos_maximos').once('value').then(snap => {
                     const cupos = snap.val() || 40;
                     if (ticket.orden <= cupos) {
                         badgeContainer.className = "bg-green-100 border-2 border-green-400 text-green-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mx-auto w-max";
                         icon.className = "fa-solid fa-chair text-2xl";
-                        area.innerText = "ASIENTO " + ticket.orden.toString().padStart(2,'0');
+                        area.innerText = "ASIENTO"; // <--- Aquí modificado para que NO salga el número
                     } else {
                         badgeContainer.className = "bg-orange-100 border-2 border-orange-400 text-orange-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-orange-500/20 mx-auto w-max";
                         icon.className = "fa-solid fa-person-walking text-2xl";
