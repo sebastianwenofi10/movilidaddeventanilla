@@ -45,13 +45,6 @@
         .keypad-btn:active { background: var(--accent); color: black; transform: scale(0.92); border-color: var(--accent); }
         .input-display { width: 100%; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,193,7,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 32px; font-weight: 900; color: #fff; outline: none; letter-spacing: 10px; }
 
-        /* DISEÑO DE TICKET (IDÉNTICO A LA PÁGINA PRINCIPAL) */
-        .ticket-tech { background: #ffffff; color: #000; border-radius: 50px; width: 100%; max-width: 440px; margin: 0 auto; overflow: hidden; box-shadow: 0 60px 150px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1); }
-        .tech-header { background: #000; color: #fff; padding: 30px; text-align: center; border-bottom: 6px solid var(--accent); }
-        .asiento-display { font-family: 'Montserrat'; font-size: 110px; font-weight: 900; color: #000; line-height: 1; margin: 20px 0; }
-        .data-grid { background: #f1f1f1; padding: 25px; border-radius: 30px; margin: 0 25px 25px; text-align: left; font-family: 'Share Tech Mono', monospace; }
-        .turno-box { background: #000; color: var(--accent); padding: 15px; border-radius: 20px; font-weight: 900; text-transform: uppercase; font-size: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
-
         .hidden-section { display: none !important; }
         #globe-area { width: 100%; height: 200px; pointer-events: none; opacity: 0.8; }
     </style>
@@ -127,41 +120,81 @@
                 </div>
             </div>
 
-            <!-- PASO 2 : TICKET GENERADO -->
+            <!-- PASO 2 : TICKET GENERADO (DISEÑO PROFESIONAL) -->
             <div id="step-3" class="hidden-section w-full animate-fade-up text-center">
-                <div class="ticket-tech">
-                    <div class="tech-header">
-                        <h2>MOVILIDAD UNAC</h2>
-                        <p class="text-[10px] text-yellow-500 tracking-widest mt-1">FIRMA DIGITAL AUTORIZADA</p>
+                
+                <div class="relative bg-white pb-6 rounded-[40px] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/10 max-w-sm mx-auto">
+                    
+                    <!-- CABECERA DEL TICKET -->
+                    <div class="bg-[#050505] text-white p-6 text-center border-b-[6px] border-yellow-500 rounded-t-[40px] relative">
+                        <h2 class="text-xl font-black uppercase tracking-widest font-['Montserrat']">Movilidad UNAC</h2>
+                        <p class="text-[9px] text-yellow-500 tracking-[3px] mt-1 font-bold">FIRMA DIGITAL AUTORIZADA</p>
+                        <!-- Decoración de los huecos del ticket -->
+                        <div class="absolute -bottom-3 left-[-10px] w-6 h-6 bg-[#050505] rounded-full"></div>
+                        <div class="absolute -bottom-3 right-[-10px] w-6 h-6 bg-[#050505] rounded-full"></div>
                     </div>
-                    <div class="p-8">
-                        <p id="t-fecha" class="text-sm font-black text-gray-500 uppercase mb-6"></p>
+
+                    <div class="px-8 pt-6">
+                        <!-- FECHA -->
+                        <p id="t-fecha" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"></p>
                         
-                        <!-- ÁREA DEL ASIENTO -->
-                        <div class="bg-gray-100 border-4 border-dashed border-gray-300 rounded-[50px] py-10 mb-8 relative">
-                            <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">ASIGNACIÓN</p>
-                            <div id="seat-area" class="asiento-display">--</div>
+                        <!-- ESTADO DE ASIENTO (Dinámico Verde o Naranja) -->
+                        <div id="seat-badge" class="bg-green-100 border-2 border-green-400 text-green-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mb-6 mx-auto w-max">
+                            <i id="seat-icon" class="fa-solid fa-chair text-2xl"></i>
+                            <span id="seat-area" class="text-3xl font-black uppercase tracking-tighter font-['Montserrat']">--</span>
                         </div>
 
                         <!-- CÓDIGO QR -->
-                        <div id="qrcode-vip" class="flex justify-center mb-8 border-4 border-black p-4 rounded-3xl w-max mx-auto"></div>
+                        <div class="flex justify-center mb-6">
+                            <div id="qrcode-vip" class="p-3 bg-white border-2 border-gray-200 rounded-3xl shadow-sm"></div>
+                        </div>
                         
-                        <!-- DATOS DEL PASAJERO -->
-                        <div class="data-grid space-y-3 text-left">
-                            <div class="flex flex-col border-b border-gray-300 pb-2">
-                                <span class="text-[9px] text-gray-500">PASAJERO:</span> 
-                                <span id="t-nom" class="font-bold text-[12px] uppercase"></span>
+                        <!-- CUADRÍCULA DE DATOS COMPLETA -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-[25px] p-5 mb-5 text-left shadow-inner">
+                            <div class="border-b border-gray-200 pb-2 mb-2">
+                                <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Pasajero Autorizado</p>
+                                <p id="t-nom" class="text-xs font-black text-gray-900 uppercase leading-tight mt-1"></p>
                             </div>
-                            <div class="flex justify-between border-b border-gray-300 pb-2">
-                                <div class="flex flex-col"><span class="text-[9px] text-gray-500">DNI FIRMADO:</span> <span id="t-dni" class="font-bold text-[13px]"></span></div>
-                                <div class="flex flex-col text-right"><span class="text-[9px] text-gray-500">HORA EMISIÓN:</span> <span id="t-hora" class="font-bold text-[13px] text-blue-600"></span></div>
+                            <div class="border-b border-gray-200 pb-2 mb-2">
+                                <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Facultad</p>
+                                <p id="t-fac" class="text-[10px] font-bold text-gray-700 uppercase mt-1"></p>
                             </div>
-                            <div class="turno-box shadow-lg"><span>TURNO ASIGNADO</span> <span class="text-white">TARDE</span></div>
+                            <div class="grid grid-cols-2 gap-4 border-b border-gray-200 pb-2 mb-2">
+                                <div>
+                                    <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">DNI</p>
+                                    <p id="t-dni" class="text-[11px] font-black text-gray-900 mt-1"></p>
+                                </div>
+                                <div>
+                                    <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Código</p>
+                                    <p id="t-cod" class="text-[11px] font-black text-gray-900 mt-1"></p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Hora Emisión</p>
+                                    <p id="t-hora" class="text-[11px] font-black text-blue-600 mt-1"></p>
+                                </div>
+                                <div>
+                                    <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Turno</p>
+                                    <div class="bg-[#050505] text-yellow-500 text-[10px] px-2 py-1 rounded-md font-black inline-block mt-1 uppercase">TARDE</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MENSAJE DE ADVERTENCIA / INSTRUCCIÓN -->
+                        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-xl text-left">
+                            <div class="flex gap-3 items-start">
+                                <i class="fa-solid fa-triangle-exclamation text-yellow-600 mt-0.5"></i>
+                                <p class="text-[9px] font-bold text-gray-700 leading-tight">
+                                    <span class="text-black font-black uppercase block mb-1 tracking-widest text-[8px]">Obligatorio</span>
+                                    Para validar su acceso, debe formar su cola y presentar este código QR al delegado antes de abordar.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <button onclick="window.location.href='ticket.html'" class="mt-8 bg-white/10 border border-white/20 text-white font-black px-8 py-4 rounded-xl uppercase tracking-widest text-[10px] hover:bg-red-600 transition">Cerrar Sesión Segura</button>
+                <button onclick="window.location.href='ticket.html'" class="mt-8 bg-white/5 border border-white/10 text-white font-black px-10 py-4 rounded-xl uppercase tracking-widest text-[10px] hover:bg-yellow-500 hover:text-black transition shadow-lg">Cerrar Sesión Segura</button>
             </div>
 
             <!-- GLOBO 3D -->
@@ -173,7 +206,6 @@
         const firebaseConfig = {
             apiKey: "AIzaSyBxaeAc2nq7iEeiLejvja3lKGwR4E09QS4",
             authDomain: "ventanilla-unac.firebaseapp.com",
-            // CORREGIDO: Usando la base de datos correcta para sincronizar con el delegado
             databaseURL: "https://unac-ventanilla-default-rtdb.firebaseio.com", 
             projectId: "ventanilla-unac",
             storageBucket: "ventanilla-unac.appspot.com",
@@ -334,49 +366,52 @@
             renderFinal: function(alu, dni, ticket) {
                 const fechaFormat = this.getRealTime().toLocaleDateString('es-PE', { weekday:'long', year:'numeric', month:'long', day:'numeric' }).toUpperCase();
                 
-                document.getElementById('t-nom').innerText = alu.Estudiante || "Estudiante UNAC";
-                document.getElementById('t-dni').innerText = dni;
-                document.getElementById('t-hora').innerText = ticket.hora;
+                // Mapear los datos visuales
                 document.getElementById('t-fecha').innerText = fechaFormat;
+                document.getElementById('t-nom').innerText = alu.Estudiante || "Estudiante UNAC";
+                document.getElementById('t-fac').innerText = alu.Facultad || "NO REGISTRADA";
+                document.getElementById('t-dni').innerText = dni;
+                document.getElementById('t-cod').innerText = alu.Codigo || alu.codigo || "S/C";
+                document.getElementById('t-hora').innerText = ticket.hora;
                 
+                const badgeContainer = document.getElementById('seat-badge');
                 const area = document.getElementById('seat-area');
+                const icon = document.getElementById('seat-icon');
 
-                // Lógica Visual del Asiento (Parado o Número)
-                // Obtenemos los cupos máximos por si acaso, aunque por defecto es 40
+                // Lógica Visual del Asiento (Verde o Naranja)
                 db.ref('sistema/config/cupos_maximos').once('value').then(snap => {
                     const cupos = snap.val() || 40;
                     if (ticket.orden <= cupos) {
-                        area.innerText = ticket.orden.toString().padStart(2,'0');
-                        area.style.color = "#000";
-                        area.style.fontSize = "110px";
+                        badgeContainer.className = "bg-green-100 border-2 border-green-400 text-green-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mx-auto w-max";
+                        icon.className = "fa-solid fa-chair text-2xl";
+                        area.innerText = "ASIENTO " + ticket.orden.toString().padStart(2,'0');
                     } else {
-                        // En teoría la página bloquea antes de esto, pero se deja por seguridad
-                        area.innerText = "PARADO";
-                        area.style.color = "#e11d48";
-                        area.style.fontSize = "70px";
+                        badgeContainer.className = "bg-orange-100 border-2 border-orange-400 text-orange-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-orange-500/20 mx-auto w-max";
+                        icon.className = "fa-solid fa-person-walking text-2xl";
+                        area.innerText = "VIAJE DE PIE";
                     }
                 });
 
-                // GENERACIÓN DE QR EXACTO PARA EL PANEL DEL DELEGADO
-                // El delegado lee: UNAC-V-[DNI]-T-[ORDEN]
+                // GENERACIÓN DE QR EXACTO PARA EL DELEGADO
                 document.getElementById('qrcode-vip').innerHTML = "";
                 const qrText = `UNAC-V-${dni}-T-${ticket.orden}`;
                 new QRCode(document.getElementById("qrcode-vip"), { 
                     text: qrText, 
-                    width: 200, 
-                    height: 200,
-                    colorDark : "#000000",
+                    width: 170, 
+                    height: 170,
+                    colorDark : "#050505",
                     colorLight : "#ffffff",
                     correctLevel : QRCode.CorrectLevel.H
                 });
 
+                // Animación de aparición
                 setTimeout(() => {
                     document.getElementById('scanning-overlay').style.display = 'none';
                     document.getElementById('step-1').classList.add('hidden-section');
                     document.getElementById('step-3').classList.remove('hidden-section');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     
-                    // Desconectar para no saturar Firebase (El ticket ya es local)
+                    // Desconectar para no saturar Firebase
                     db.goOffline();
                 }, 1000);
             },
