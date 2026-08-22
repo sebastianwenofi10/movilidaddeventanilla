@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UNAC | Panel Control Pro</title>
+    
+    <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <!-- SWEETALERT AGREGADO -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Montserrat:wght@800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-    <!-- FIREBASE -->
+    <!-- FIREBASE COMPAT -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
@@ -42,11 +45,16 @@
         /* VENTANA MODAL AJUSTES */
         #modal-ajustes { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
 
-        /* LISTA Y EXCEL */
+        /* LISTA MAESTRA Y ETIQUETAS */
         #master-list-view { position: fixed; inset: 0; background: #050505; z-index: 1000; display: none; flex-direction: column; }
         .student-card { border-left: 5px solid transparent; transition: 0.3s; margin-bottom: 8px; }
         .status-red { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
         .status-green { border-color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        
+        /* NUEVOS ESTILOS PARA LAS ETIQUETAS DE ASIENTO */
+        .badge-seat { background: #10b981; color: white; padding: 4px 8px; border-radius: 6px; font-size: 8px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 2px 5px rgba(16,185,129,0.3); }
+        .badge-stand { background: #f59e0b; color: white; padding: 4px 8px; border-radius: 6px; font-size: 8px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 2px 5px rgba(245,158,11,0.3); }
+
         #reporte-foto-container { position: absolute; left: -9999px; top: 0; background: white; color: black; width: 600px; padding: 30px; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
         
         .progress-bar { background: rgba(255,255,255,0.1); border-radius: 10px; height: 10px; width: 100%; overflow: hidden; margin-top: 5px; }
@@ -62,13 +70,13 @@
         <p id="flash-subtext" class="text-sm mt-2 font-bold opacity-80 uppercase tracking-widest"></p>
     </div>
 
-    <!-- MODAL DE AJUSTES DEL BUS (CUPOS Y HORARIOS) -->
+    <!-- MODAL DE AJUSTES DEL BUS -->
     <div id="modal-ajustes">
         <div class="glass p-6 w-[90%] max-w-sm relative">
             <button onclick="cerrarAjustes()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
             <h2 class="text-xl font-black text-yellow-500 uppercase italic mb-4"><i class="fa-solid fa-gears"></i> Ajustes del Bus</h2>
             
-            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left">Cantidad Total de Asientos (Cupo Máximo)</label>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left">Cantidad Total de Asientos</label>
             <input type="number" id="cfg-cupos" placeholder="Ej: 40">
 
             <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mt-2">Hora Programada Tarde <span class="text-red-500 text-[8px]">(Vacío = Manual)</span></label>
@@ -81,7 +89,7 @@
         </div>
     </div>
 
-    <!-- VISTA DE LISTA MAESTRA / WHATSAPP -->
+    <!-- VISTA DE LISTA MAESTRA -->
     <div id="master-list-view">
         <header class="p-4 border-b border-white/10 flex justify-between items-center bg-black">
             <div>
@@ -89,9 +97,10 @@
                 <p class="text-[9px] text-gray-500 uppercase tracking-widest">Estado del Bus</p>
             </div>
             <div class="flex gap-2">
-                <button onclick="generarReporteAutomatizado()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-green-500 flex flex-col items-center">
-                    <i class="fa-brands fa-whatsapp text-lg"></i>
-                    <span>Cerrar Turno</span>
+                <!-- BOTÓN MODIFICADO PARA DESCARGAR IMAGEN SOLAMENTE -->
+                <button onclick="generarReporteAutomatizado()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-blue-500 flex flex-col items-center">
+                    <i class="fa-solid fa-download text-lg"></i>
+                    <span>Descargar Reporte</span>
                 </button>
                 <button onclick="toggleLista(false)" class="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl hover:bg-red-600 transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
@@ -135,14 +144,13 @@
             <!-- TARJETAS DE TURNOS -->
             <div class="mb-6">
                 <div class="flex justify-between items-center mb-3">
-                    <span class="text-[11px] font-black uppercase text-gray-400 tracking-widest">Control de Tarjetas / Tickets</span>
+                    <span class="text-[11px] font-black uppercase text-gray-400 tracking-widest">Control de Turnos</span>
                     <button onclick="abrirAjustes()" class="text-[10px] bg-white/10 px-3 py-1.5 rounded-lg text-white hover:bg-yellow-500 hover:text-black font-black uppercase transition">
                         <i class="fa-solid fa-gear"></i> Configurar Bus
                     </button>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-3">
-                    <!-- TURNO TARDE -->
                     <div id="card-tarde" class="turno-card">
                         <div id="badge-tarde" class="badge-status badge-off">🔴 Inactivo</div>
                         <i class="fa-solid fa-cloud-sun text-2xl text-blue-400 mb-2 mt-2 block"></i>
@@ -151,7 +159,6 @@
                         <button onclick="toggleTurno('tarde')" id="btn-tarde" class="w-full bg-white/10 hover:bg-blue-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar Manual</button>
                     </div>
 
-                    <!-- TURNO NOCHE -->
                     <div id="card-noche" class="turno-card">
                         <div id="badge-noche" class="badge-status badge-off">🔴 Inactivo</div>
                         <i class="fa-solid fa-moon text-2xl text-purple-400 mb-2 mt-2 block"></i>
@@ -160,7 +167,7 @@
                         <button onclick="toggleTurno('noche')" id="btn-noche" class="w-full bg-white/10 hover:bg-purple-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar Manual</button>
                     </div>
                 </div>
-                <!-- Barra de capacidad -->
+                
                 <div class="mt-4 p-3 glass relative">
                     <div class="flex justify-between text-[10px] font-black uppercase tracking-widest mb-1">
                         <span class="text-yellow-500">Ocupación del Bus</span>
@@ -204,13 +211,13 @@
 
             <!-- ZONA DE PELIGRO -->
             <div class="border-t border-white/10 pt-4 grid grid-cols-2 gap-3 mb-10">
-                <button onclick="sincronizarConExcel(false)" class="w-full bg-blue-900/50 text-blue-400 border border-blue-800 font-black py-3 rounded-xl uppercase text-[9px]"><i class="fa-solid fa-cloud-arrow-up"></i> Forzar Excel</button>
-                <button onclick="reiniciarFirebase()" class="w-full bg-red-900/50 text-red-500 border border-red-800 font-black py-3 rounded-xl uppercase text-[9px]"><i class="fa-solid fa-trash-can"></i> Reset Sistema</button>
+                <button onclick="borrarEscaneos()" class="w-full bg-blue-900/50 text-blue-400 border border-blue-800 font-black py-3 rounded-xl uppercase text-[9px] hover:bg-blue-800 transition"><i class="fa-solid fa-eraser"></i> Borrar Historial</button>
+                <button onclick="reiniciarFirebase()" class="w-full bg-red-900/50 text-red-500 border border-red-800 font-black py-3 rounded-xl uppercase text-[9px] hover:bg-red-800 transition"><i class="fa-solid fa-trash-can"></i> Reset Sistema</button>
             </div>
         </div>
     </div>
 
-    <!-- CONTENEDOR INVISIBLE PARA FOTO DE WHATSAPP -->
+    <!-- CONTENEDOR INVISIBLE PARA FOTO (SIN WHATSAPP) -->
     <div id="reporte-foto-container">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
             <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; font-weight: 900;">🚌 Lista Oficial UNAC</h1>
@@ -227,11 +234,14 @@
             </thead>
             <tbody id="reporte-tbody"></tbody>
         </table>
+        
+        <!-- FIRMA DE AUTOR (SEBASTIAN) -->
+        <div style="margin-top: 25px; text-align: center; font-size: 10px; color: #777; border-top: 2px dashed #ccc; padding-top: 15px; font-weight: 900; letter-spacing: 2px;">
+            SISTEMA GENERADO POR SEBASTIAN
+        </div>
     </div>
 
     <script>
-        const URL_GAS = "https://script.google.com/macros/s/AKfycbyuM2lbXzvHwY9r_xxGMYfiUjEjMMDATw1uMYxsgtec5CxcS3qcX9_v_QbjdxVV4wU/exec";
-
         const firebaseConfig = {
             apiKey: "AIzaSyBxaeAc2nq7iEeiLejvja3lKGwR4E09QS4",
             authDomain: "ventanilla-unac.firebaseapp.com",
@@ -246,14 +256,13 @@
         const db = firebase.database();
 
         const soundOk = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        const soundError = new Audio('https://www.soundjay.com/buttons/beep-05.mp3');
 
         let delegadoActivo = localStorage.getItem('unac_session_dni') || "";
         const DELEGADOS = ["71886034", "77570731"];
 
         let listaGlobalAlumnos = []; 
         let configGlobal = { cupos: 40, hora_tarde: '', hora_noche: '', tarde_activo: false, noche_activo: false };
-        let serverTimeOffset = 0; // Control de tiempo contra hackers
+        let serverTimeOffset = 0; 
 
         window.onload = function() {
             if (delegadoActivo !== "") {
@@ -288,7 +297,7 @@
         
         function guardarAjustes() {
             const c = parseInt(document.getElementById('cfg-cupos').value) || 40;
-            const ht = document.getElementById('cfg-hora-tarde').value || ""; // Si está vacío se borra la auto-activación
+            const ht = document.getElementById('cfg-hora-tarde').value || ""; 
             const hn = document.getElementById('cfg-hora-noche').value || "";
             
             db.ref('sistema/config').update({ cupos_maximos: c, hora_tarde: ht, hora_noche: hn });
@@ -296,13 +305,12 @@
             cerrarAjustes();
         }
 
-        // NUEVA FUNCIÓN DE ACTUALIZACIÓN INTELIGENTE DE TARJETAS
         function actualizarUI_Tarjetas() {
             const now = new Date(Date.now() + serverTimeOffset);
             const currentMins = now.getHours() * 60 + now.getMinutes();
 
             const parseTime = (timeStr) => {
-                if(!timeStr) return 9999; // Si no hay hora, nunca se activa solo
+                if(!timeStr) return 9999; 
                 const p = timeStr.split(':');
                 return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
             };
@@ -375,18 +383,15 @@
             let isTimeActive = (t === 'tarde') ? isTardeTime : isNocheTime;
             let isManualActive = (t === 'tarde') ? configGlobal.tarde_activo : configGlobal.noche_activo;
             
-            // Si estaba activo (ya sea manual o por reloj), lo cerramos
             if (isTimeActive || isManualActive) {
                 db.ref(`sistema/config/${t}_activo`).set(false);
                 if (isTimeActive) {
-                    // Si estaba activo por hora, borramos la hora para forzar el cierre real
                     db.ref(`sistema/config/hora_${t}`).set('');
                     notificarFlash("CIERRE FORZADO", "error", "Hora programada eliminada");
                 } else {
                     notificarFlash("TURNO CERRADO", "error", "Cierre manual");
                 }
             } else {
-                // Si estaba apagado, lo prendemos manual
                 db.ref(`sistema/config/${t}_activo`).set(true);
                 notificarFlash("TURNO ABIERTO", "success", "Apertura manual");
             }
@@ -400,27 +405,22 @@
             const scanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 });
             scanner.render(onScanSuccess);
 
-            // Obtener diferencia de hora con Google
             db.ref('.info/serverTimeOffset').on('value', snap => {
                 serverTimeOffset = snap.val() || 0;
                 actualizarUI_Tarjetas();
             });
-
-            // Revisar cada 15 segundos si se alcanzó una hora programada para prender las tarjetas
             setInterval(actualizarUI_Tarjetas, 15000);
 
-            // Auto-reseteo de día
             db.ref('sistema/config').once('value', snap => {
                 let data = snap.val() || {};
                 if (data.fecha_sistema !== fechaHoy) {
                     db.ref('sistema/config').update({
                         tarde_activo: false, noche_activo: false,
-                        hora_tarde: '', hora_noche: '', // Borramos la programación anterior
+                        hora_tarde: '', hora_noche: '',
                         fecha_sistema: fechaHoy
                     });
                 }
                 
-                // Escuchamos la configuración en tiempo real
                 db.ref('sistema/config').on('value', snapRealtime => {
                     const dataRT = snapRealtime.val() || {};
                     configGlobal.cupos = dataRT.cupos_maximos || 40;
@@ -441,7 +441,6 @@
                 
                 let combined = []; let historyData = []; let ticketsTurnoActivo = 0;
 
-                // Evaluación de tiempo para bloqueos
                 const now = new Date(Date.now() + serverTimeOffset);
                 const currentMins = now.getHours() * 60 + now.getMinutes();
                 const tTarde = (configGlobal.hora_tarde) ? parseInt(configGlobal.hora_tarde.split(':')[0])*60 + parseInt(configGlobal.hora_tarde.split(':')[1]) : 9999;
@@ -469,13 +468,11 @@
                 combined.sort((a, b) => a.orden - b.orden);
                 listaGlobalAlumnos = combined;
 
-                // UI Barra de cupos
                 document.getElementById('txt-cupos').innerText = `${ticketsTurnoActivo} / ${configGlobal.cupos}`;
                 let porcentaje = (ticketsTurnoActivo / configGlobal.cupos) * 100;
                 document.getElementById('barra-cupos').style.width = `${Math.min(porcentaje, 100)}%`;
                 document.getElementById('barra-cupos').style.background = porcentaje >= 100 ? "#ef4444" : "#ffc107";
 
-                // CIERRE AUTOMÁTICO DE BUS LLENO (Apaga manual y borra la hora)
                 if(ticketsTurnoActivo >= configGlobal.cupos) {
                     if(isTardeActive) { 
                         db.ref('sistema/config/tarde_activo').set(false); 
@@ -496,10 +493,22 @@
             });
         }
 
+        // NUEVO ESCÁNER ADAPTADO AL FORMATO: UNAC-V-[DNI]-T-[ORDEN]
         async function onScanSuccess(text) {
             let dniScanned = ""; let tKey = "";
-            if (text.includes(':')) { const parts = text.split(':'); dniScanned = parts[1]; tKey = parts[0].includes('-T') ? 'tarde' : 'noche'; } 
-            else if (text.includes('-')) { const parts = text.split('-'); dniScanned = parts[2]; tKey = parts[3].toLowerCase() === 't' ? 'tarde' : 'noche'; }
+            
+            if (text.startsWith('UNAC-V-')) {
+                const parts = text.split('-');
+                if (parts.length >= 4) {
+                    dniScanned = parts[2];
+                    tKey = (parts[3] === 'T') ? 'tarde' : (parts[3] === 'N' ? 'noche' : 'mañana');
+                }
+            } else {
+                // Compatibilidad con tickets antiguos por si acaso
+                if (text.includes(':')) { const p = text.split(':'); dniScanned = p[1]; tKey = p[0].includes('-T') ? 'tarde' : 'noche'; } 
+                else if (text.includes('-')) { const p = text.split('-'); dniScanned = p[2]; tKey = p[3].toLowerCase() === 't' ? 'tarde' : 'noche'; }
+            }
+            
             if(!dniScanned) return;
 
             const fechaHoy = new Date().toISOString().split('T')[0];
@@ -511,18 +520,19 @@
 
             const nombre = snapTicket.val().nombre;
             db.ref(`sistema/asistencias/${fechaHoy}/${dniScanned}`).set({ nombre: nombre, hora: new Date().toLocaleTimeString(), delegado: delegadoActivo });
-            fetch(`${URL_GAS}?accion=marcar_asistencia&dni=${dniScanned}&delegado=${delegadoActivo}`).catch(() => {});
 
             soundOk.play(); notificarFlash("VERIFICADO ✅", "success", nombre);
         }
 
         // ==========================================
-        // EXCEL Y REPORTE WHATSAPP
+        // REPORTE COMO IMAGEN DIRECTA
         // ==========================================
         async function generarReporteAutomatizado() {
-            if(listaGlobalAlumnos.length === 0) return alert("No hay alumnos.");
-            notificarFlash("PROCESANDO...", "success", "Guardando Excel y Foto");
-            sincronizarConExcel(true); 
+            if(listaGlobalAlumnos.length === 0) {
+                return Swal.fire({title: 'Lista Vacía', text: 'No hay alumnos registrados para generar el reporte.', icon: 'info', background: '#111', color: '#fff'});
+            }
+            
+            notificarFlash("PROCESANDO...", "success", "Generando Imagen");
 
             const fechaString = new Date().toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             document.getElementById('reporte-fecha').innerText = fechaString;
@@ -540,47 +550,80 @@
                 linkDescarga.download = `Reporte_UNAC_${new Date().toISOString().split('T')[0]}.png`;
                 linkDescarga.href = canvas.toDataURL('image/png');
                 linkDescarga.click();
-
-                setTimeout(() => {
-                    const txt = encodeURIComponent(`🚌 *REPORTE OFICIAL - BUS UNAC*\n📅 Fecha: ${fechaString}\n👥 Tickets Emitidos: ${listaGlobalAlumnos.length}\n✅ Abordaron: ${listaGlobalAlumnos.filter(a => a.verificado).length}\n\n*_Por favor, adjunta la imagen descargada_* 📸`);
-                    window.open(`https://api.whatsapp.com/send?text=${txt}`, '_blank');
-                }, 1000);
-            } catch (e) { alert("Error en imagen. El Excel sí se actualizó."); }
+                
+                Swal.fire({title: '¡Éxito!', text: 'La imagen de la lista ha sido descargada.', icon: 'success', background: '#111', color: '#fff', confirmButtonColor: '#10b981'});
+            } catch (e) { 
+                Swal.fire({title: 'Error', text: 'No se pudo generar la imagen.', icon: 'error', background: '#111', color: '#fff'}); 
+            }
         }
 
-        function sincronizarConExcel(silencioso = false) {
-            if(listaGlobalAlumnos.length === 0) return;
-            if(!silencioso) notificarFlash("SINCRONIZANDO", "success", "A Excel...");
-            let listaLimpia = listaGlobalAlumnos.map(s => ({ dni: s.dni, nombre: s.nombre, orden: s.orden, turno: s.turno }));
-            fetch(`${URL_GAS}?accion=sincronizar_base&lista=${encodeURIComponent(JSON.stringify(listaLimpia))}`)
-            .then(() => { if(!silencioso) alert("Excel Actualizado"); });
+        // ==========================================
+        // BOTONES DE ZONA DE PELIGRO (SWEETALERT)
+        // ==========================================
+        async function borrarEscaneos() {
+            Swal.fire({
+                title: '¿Borrar Historial?',
+                text: 'Se eliminarán todos los escaneos (asistencias) de hoy. Los tickets emitidos NO se borrarán.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#374151',
+                confirmButtonText: 'Sí, borrar',
+                cancelButtonText: 'Cancelar',
+                background: '#111', color: '#fff'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const fecha = new Date().toISOString().split('T')[0];
+                    await db.ref(`sistema/asistencias/${fecha}`).remove();
+                    notificarFlash("ESCANEOS BORRADOS", "success", "Historial limpio");
+                }
+            });
+        }
+
+        async function reiniciarFirebase() {
+            Swal.fire({
+                title: '¿REINICIO TOTAL?',
+                text: '¡Peligro! Esto borrará TODOS los tickets, contadores y escaneos del día de hoy. El sistema quedará en 0 absoluto.',
+                icon: 'error',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#374151',
+                confirmButtonText: 'RESETEAR SISTEMA',
+                cancelButtonText: 'Cancelar',
+                background: '#111', color: '#fff'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const fecha = new Date().toISOString().split('T')[0];
+                    // Borrando la rama de viajes se borra tickets y contador.
+                    await db.ref(`sistema/viajes/${fecha}`).remove(); 
+                    await db.ref(`sistema/asistencias/${fecha}`).remove();
+                    
+                    notificarFlash("SISTEMA REINICIADO", "success", "Todo en 0");
+                    setTimeout(() => location.reload(), 1500);
+                }
+            });
         }
 
         // INTERFAZ RENDER
         function renderHistorial(lista) {
             lista.sort((a,b) => b.hora.localeCompare(a.hora));
             document.getElementById('historial-reciente').innerHTML = lista.length === 0 ? "<p class='text-center text-[10px] text-gray-600 py-4'>Sin abordajes...</p>" : 
-            lista.slice(0, 10).map(item => `<div class="history-item"><div class="flex flex-col"><span class="font-bold text-white text-[9px] uppercase">${item.nombre}</span><span class="text-[7px] text-yellow-500 uppercase">Por: ${item.delegado}</span></div><span class="font-black text-green-500 text-[10px]">${item.hora}</span></div>`).join('');
+            lista.slice(0, 10).map(item => `<div class="history-item flex justify-between items-center mb-2 border-b border-white/5 pb-2"><div class="flex flex-col"><span class="font-bold text-white text-[9px] uppercase">${item.nombre}</span><span class="text-[7px] text-yellow-500 uppercase">Por: ${item.delegado}</span></div><span class="font-black text-green-500 text-[10px]">${item.hora}</span></div>`).join('');
         }
+
         function renderMasterList(students) {
             document.getElementById('contenedor-lista-maestra').innerHTML = students.length === 0 ? "<p class='text-center text-gray-500 py-10'>No hay tickets.</p>" : 
             students.map(s => `<div class="p-4 rounded-xl student-card ${s.verificado ? 'status-green' : 'status-red'} flex justify-between items-center glass"><div><div class="flex items-center gap-2"><span class="${s.orden <= configGlobal.cupos ? 'badge-seat' : 'badge-stand'}">${s.orden <= configGlobal.cupos ? 'ASIENTO' : 'PARADO'}</span><p class="text-[11px] font-black uppercase text-white">${s.nombre}</p></div><div class="flex gap-4 mt-1"><span class="text-[9px] font-bold text-yellow-500">TICKET: ${s.hora}</span><span class="text-[9px] font-bold text-blue-400">TURNO: ${s.turno}</span></div></div><div class="text-right"><span class="text-[10px] font-black ${s.verificado ? 'text-green-500' : 'text-red-500'} uppercase">${s.verificado ? 'LISTO' : 'FALTA'}</span></div></div>`).join('');
         }
 
         function toggleLista(show) { document.getElementById('master-list-view').style.display = show ? 'flex' : 'none'; }
+        
         function notificarFlash(titulo, tipo, sub) {
             const f = document.getElementById('flash-notif'), t = document.getElementById('flash-text'), st = document.getElementById('flash-subtext'), i = document.getElementById('flash-icon');
             t.innerText = titulo; st.innerText = sub;
             f.className = tipo === "success" ? "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 notif-success glass" : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 notif-error glass";
             i.className = tipo === "success" ? "fa-solid fa-circle-check text-7xl mb-4" : "fa-solid fa-circle-xmark text-7xl mb-4";
             f.style.display = 'block'; setTimeout(() => f.style.display = 'none', 2500);
-        }
-        async function reiniciarFirebase() {
-            if(confirm("⚠️ ¿Reiniciar sistema de hoy?")) {
-                const fecha = new Date().toISOString().split('T')[0];
-                await db.ref(`sistema/viajes/${fecha}`).remove(); await db.ref(`sistema/asistencias/${fecha}`).remove();
-                fetch(`${URL_GAS}?accion=reiniciar_sistema`); location.reload();
-            }
         }
     </script>
 </body>
