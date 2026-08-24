@@ -310,7 +310,7 @@
         };
         
         let serverTimeOffset = 0; 
-        let isScannerCooldown = false; // Bandera para evitar doble escaneo rápido
+        let isScannerCooldown = false; 
 
         function getFechaID() {
             return new Date(Date.now() + serverTimeOffset).toISOString().split('T')[0];
@@ -373,7 +373,6 @@
                 prog_noche: prog_n, hora_noche: hn 
             });
 
-            // Actualizamos la UI al instante
             document.getElementById('txt-cupos').innerText = `0 / ${c}`;
             notificarFlash("AJUSTES GUARDADOS", "success", "Configuración de bus actualizada");
             cerrarAjustes();
@@ -389,19 +388,15 @@
                 return parseInt(timeStr.split(':')[0], 10) * 60 + parseInt(timeStr.split(':')[1], 10);
             };
 
-            // Evaluar Turno Tarde
             if (configGlobal.prog_tarde && configGlobal.hora_tarde) {
                 const limitTarde = checkTime(configGlobal.hora_tarde);
                 const limitNoche = checkTime(configGlobal.hora_noche);
-                
-                // Si ya es hora y no está activo en Firebase, activarlo automáticamente.
                 if (currentMins >= limitTarde && currentMins < limitNoche && !configGlobal.tarde_activo) {
                     db.ref('sistema/config/tarde_activo').set(true);
                     notificarFlash("HORA ALCANZADA", "success", "Turno Tarde Abierto Automáticamente");
                 }
             }
 
-            // Evaluar Turno Noche
             if (configGlobal.prog_noche && configGlobal.hora_noche) {
                 const limitNoche = checkTime(configGlobal.hora_noche);
                 if (currentMins >= limitNoche && !configGlobal.noche_activo) {
@@ -411,7 +406,7 @@
             }
         }
 
-        // ACTUALIZA VISUALMENTE LOS BOTONES DE LA PANTALLA PRINCIPAL CON VERDE/ROJO
+        // ACTUALIZA VISUALMENTE LOS BOTONES
         function actualizarUI_Tarjetas() {
             // TARJETA TARDE
             const cTarde = document.getElementById('card-tarde');
@@ -420,14 +415,12 @@
             document.getElementById('lbl-hora-tarde').innerText = configGlobal.prog_tarde ? (configGlobal.hora_tarde || 'Sin definir') : 'MODO MANUAL';
             
             if(configGlobal.tarde_activo) {
-                // ESTADO: ACTIVADO -> EL BOTÓN DEBE SER ROJO PARA PODER APAGARLO
                 cTarde.classList.add('active'); 
                 bTarde.className = 'badge-status badge-on'; 
                 bTarde.innerText = configGlobal.prog_tarde ? '🟢 PROG. ACTIVO' : '🟢 MANUAL ACTIVO';
                 btnTarde.innerHTML = '<i class="fa-solid fa-power-off"></i> Desactivar Turno'; 
                 btnTarde.className = 'w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
             } else {
-                // ESTADO: DESACTIVADO -> EL BOTÓN DEBE SER VERDE PARA PODER PRENDERLO
                 cTarde.classList.remove('active'); 
                 bTarde.className = 'badge-status badge-off'; 
                 bTarde.innerText = '🔴 DESACTIVADO';
@@ -442,14 +435,12 @@
             document.getElementById('lbl-hora-noche').innerText = configGlobal.prog_noche ? (configGlobal.hora_noche || 'Sin definir') : 'MODO MANUAL';
 
             if(configGlobal.noche_activo) {
-                // ESTADO: ACTIVADO -> EL BOTÓN DEBE SER ROJO PARA PODER APAGARLO
                 cNoche.classList.add('active'); 
                 bNoche.className = 'badge-status badge-on'; 
                 bNoche.innerText = configGlobal.prog_noche ? '🟢 PROG. ACTIVO' : '🟢 MANUAL ACTIVO';
                 btnNoche.innerHTML = '<i class="fa-solid fa-power-off"></i> Desactivar Turno'; 
                 btnNoche.className = 'w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
             } else {
-                // ESTADO: DESACTIVADO -> EL BOTÓN DEBE SER VERDE PARA PODER PRENDERLO
                 cNoche.classList.remove('active'); 
                 bNoche.className = 'badge-status badge-off'; 
                 bNoche.innerText = '🔴 DESACTIVADO';
@@ -458,7 +449,6 @@
             }
         }
 
-        // EL BOTÓN DEL DASHBOARD CAMBIA ESTRICTAMENTE LA VARIABLE "activo" EN FIREBASE A SÍ O NO
         function toggleTurno(t) {
             let currentState = (t === 'tarde') ? configGlobal.tarde_activo : configGlobal.noche_activo;
             
@@ -467,7 +457,7 @@
                 notificarFlash("TURNO DESACTIVADO", "error", "Se bloqueó la emisión de tickets");
             } else {
                 db.ref(`sistema/config/${t}_activo`).set(true);
-                notificarFlash("TURNO ACTIVADO", "success", "Los alumnos ya pueden sacar ticket");
+                notificarFlash("TURNO ACTIVADO", "success", "Los alumnos ya pueden sacar ticket o ver el suyo");
             }
         }
 
@@ -475,13 +465,11 @@
             const scanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 });
             scanner.render(onScanSuccess);
 
-            // Reloj estricto con Firebase
             db.ref('.info/serverTimeOffset').on('value', snap => {
                 serverTimeOffset = snap.val() || 0;
             });
-            setInterval(evaluarTurnosAutomaticos, 15000); // Revisa cada 15 seg si debe activar un turno programado
+            setInterval(evaluarTurnosAutomaticos, 15000);
 
-            // Escuchador de Configuraciones y Ajustes Globales
             db.ref('sistema/config').on('value', snap => {
                 const dataRT = snap.val() || {};
                 configGlobal.cupos = dataRT.cupos_maximos || 40;
@@ -497,7 +485,6 @@
                 actualizarUI_Tarjetas();
             });
 
-            // Escuchador Principal de Viajes y Asistencias
             db.ref('sistema').on('value', snap => {
                 const fechaHoy = getFechaID();
                 const data = snap.val() || {};
@@ -510,8 +497,6 @@
                     const tReg = viajes[turno] ? viajes[turno].registros : null;
                     if (tReg) {
                         let cantidad = Object.keys(tReg).length;
-                        
-                        // Solo sumamos los tickets a la barra si el turno respectivo está ACTIVO
                         if((turno === 'tarde' && configGlobal.tarde_activo) || (turno === 'noche' && configGlobal.noche_activo)){
                             ticketsTurnoActivo += cantidad;
                         }
@@ -527,17 +512,12 @@
                 combined.sort((a, b) => a.orden - b.orden);
                 listaGlobalAlumnos = combined;
 
-                // ACTUALIZACIÓN DINÁMICA DE LA BARRA USANDO LOS CUPOS REALES
                 document.getElementById('txt-cupos').innerText = `${ticketsTurnoActivo} / ${configGlobal.cupos}`;
                 let porcentaje = (ticketsTurnoActivo / configGlobal.cupos) * 100;
                 document.getElementById('barra-cupos').style.width = `${Math.min(porcentaje, 100)}%`;
                 document.getElementById('barra-cupos').style.background = porcentaje >= 100 ? "#ef4444" : "#ffc107";
 
-                // AUTO CIERRE SI SE LLENA
-                if(ticketsTurnoActivo >= configGlobal.cupos) {
-                    if(configGlobal.tarde_activo) { db.ref('sistema/config/tarde_activo').set(false); notificarFlash("BUS LLENO", "error", "Turno Tarde Autocerrado"); }
-                    if(configGlobal.noche_activo) { db.ref('sistema/config/noche_activo').set(false); notificarFlash("BUS LLENO", "error", "Turno Noche Autocerrado"); }
-                }
+                // LA FUNCIÓN DE AUTOCIERRE FUE ELIMINADA DE AQUÍ PARA NO BLOQUEAR A LOS ALUMNOS QUE YA TIENEN TICKET.
 
                 document.getElementById('contador-glo').innerText = Object.keys(asistencias).length;
                 document.getElementById('contador-mi').innerText = Object.values(asistencias).filter(a => a.delegado === delegadoActivo).length;
@@ -546,12 +526,11 @@
             });
         }
 
-        // SISTEMA DE ESCANEO CON BLOQUEO (COOLDOWN) PARA EVITAR DOBLE LECTURA
         async function onScanSuccess(text) {
-            if (isScannerCooldown) return; // Si está en pausa, ignora cualquier QR que vea
+            if (isScannerCooldown) return; 
             
             isScannerCooldown = true;
-            document.getElementById('scanner-cooldown-overlay').style.display = 'flex'; // Pantalla negra visual en la cámara
+            document.getElementById('scanner-cooldown-overlay').style.display = 'flex'; 
 
             let dniScanned = ""; let tKey = "";
             
@@ -570,7 +549,7 @@
                 setTimeout(() => {
                     isScannerCooldown = false;
                     document.getElementById('scanner-cooldown-overlay').style.display = 'none';
-                }, 3000); // 3 SEGUNDOS DE PAUSA PARA EL SIGUIENTE ESCANEO
+                }, 3000); 
             };
 
             if(!dniScanned) {
@@ -581,7 +560,6 @@
 
             const fechaHoy = getFechaID();
             
-            // VALIDACIÓN: ¿EL TICKET ES DE HOY Y EXISTE EN LA BASE DE DATOS?
             const snapTicket = await db.ref(`sistema/viajes/${fechaHoy}/${tKey}/registros/${dniScanned}`).once('value');
             if(!snapTicket.exists()) {
                 notificarFlash("TICKET CADUCADO", "error", "No figura en la lista de hoy");
@@ -589,7 +567,6 @@
                 return liberarCamara();
             }
 
-            // VALIDACIÓN: ¿EL ALUMNO YA FUE ESCANEADO?
             const snapAsis = await db.ref(`sistema/asistencias/${fechaHoy}/${dniScanned}`).once('value');
             if(snapAsis.exists()) {
                 notificarFlash("YA ESCANEADO", "warning", "Este alumno ya subió al bus");
@@ -597,7 +574,6 @@
                 return liberarCamara();
             }
 
-            // GUARDADO OFICIAL
             const nombre = snapTicket.val().nombre;
             await db.ref(`sistema/asistencias/${fechaHoy}/${dniScanned}`).set({ nombre: nombre, hora: new Date().toLocaleTimeString(), delegado: delegadoActivo });
 
