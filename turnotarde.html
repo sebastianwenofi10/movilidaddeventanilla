@@ -36,8 +36,8 @@
         .hud-line { position: absolute; width: 100%; height: 4px; background: var(--accent); top: 0; animation: scanLine 2.5s linear infinite; box-shadow: 0 0 30px var(--accent); }
         @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
 
-        /* PANTALLA ROJA DE BLOQUEO */
-        #blocking-overlay { position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; backdrop-filter: blur(20px); border: 15px solid #ef4444; }
+        /* PANTALLA DE BLOQUEO */
+        #blocking-overlay { position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; backdrop-filter: blur(20px); transition: all 0.3s ease; }
 
         /* TECLADO DE FIRMA ESTILO GLASSMORPHISM */
         .glass-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px); border-radius: 40px; }
@@ -63,11 +63,13 @@
         <p class="text-[9px] text-gray-500 font-bold uppercase mt-6 tracking-[6px]">SISTEMA SEGURIDAD BIOMÉTRICA UNAC</p>
     </div>
 
-    <!-- PANTALLA DE BLOQUEO DE SEGURIDAD -->
-    <div id="blocking-overlay">
-        <i class="fa-solid fa-shield-halved text-7xl text-red-600 mb-6 animate-bounce"></i>
-        <h2 class="text-3xl font-black text-white uppercase tracking-tighter">ACCESO DENEGADO</h2>
-        <p id="block-reason" class="text-gray-400 text-sm mt-4 mb-8 max-w-xs font-bold uppercase tracking-widest">Su sesión caducó o el delegado cerró el turno.</p>
+    <!-- PANTALLA DE BLOQUEO DE SEGURIDAD DINÁMICA -->
+    <div id="blocking-overlay" style="border: 15px solid #ef4444;">
+        <i id="block-icon" class="fa-solid fa-shield-halved text-7xl text-red-600 mb-6 animate-bounce"></i>
+        <h2 id="block-title" class="text-3xl font-black text-white uppercase tracking-tighter">ACCESO DENEGADO</h2>
+        <div class="bg-black/50 border border-white/10 p-6 rounded-2xl max-w-sm mt-4 mb-8">
+            <p id="block-reason" class="text-gray-300 text-xs font-bold uppercase tracking-widest leading-relaxed">Su sesión caducó o el delegado cerró el turno.</p>
+        </div>
         <a href="ticket.html" class="bg-yellow-500 text-black font-black px-10 py-4 rounded-2xl text-xs uppercase tracking-widest shadow-xl hover:bg-white transition">Regresar al Portal</a>
     </div>
 
@@ -129,7 +131,6 @@
                     <div class="bg-[#050505] text-white p-6 text-center border-b-[6px] border-yellow-500 rounded-t-[40px] relative">
                         <h2 class="text-xl font-black uppercase tracking-widest font-['Montserrat']">Movilidad UNAC</h2>
                         <p class="text-[9px] text-yellow-500 tracking-[3px] mt-1 font-bold">FIRMA DIGITAL AUTORIZADA</p>
-                        <!-- Decoración de los huecos del ticket -->
                         <div class="absolute -bottom-3 left-[-10px] w-6 h-6 bg-[#050505] rounded-full"></div>
                         <div class="absolute -bottom-3 right-[-10px] w-6 h-6 bg-[#050505] rounded-full"></div>
                     </div>
@@ -139,9 +140,9 @@
                         <p id="t-fecha" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"></p>
                         
                         <!-- ESTADO DE ASIENTO -->
-                        <div id="seat-badge" class="bg-green-100 border-2 border-green-400 text-green-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mb-6 mx-auto w-max">
-                            <i id="seat-icon" class="fa-solid fa-chair text-2xl"></i>
-                            <span id="seat-area" class="text-3xl font-black uppercase tracking-tighter font-['Montserrat']">--</span>
+                        <div class="bg-green-100 border-2 border-green-400 text-green-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mb-6 mx-auto w-max">
+                            <i class="fa-solid fa-chair text-2xl"></i>
+                            <span id="seat-area" class="text-4xl font-black uppercase tracking-tighter font-['Montserrat']">--</span>
                         </div>
 
                         <!-- CÓDIGO QR -->
@@ -149,7 +150,7 @@
                             <div id="qrcode-vip" class="p-3 bg-white border-2 border-gray-200 rounded-3xl shadow-sm"></div>
                         </div>
                         
-                        <!-- CUADRÍCULA DE DATOS COMPLETA -->
+                        <!-- DATOS COMPLETA -->
                         <div class="bg-gray-50 border border-gray-200 rounded-[25px] p-5 mb-5 text-left shadow-inner">
                             <div class="border-b border-gray-200 pb-2 mb-2">
                                 <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Pasajero Autorizado</p>
@@ -181,7 +182,7 @@
                             </div>
                         </div>
 
-                        <!-- MENSAJE DE ADVERTENCIA / INSTRUCCIÓN -->
+                        <!-- INSTRUCCIÓN -->
                         <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-xl text-left">
                             <div class="flex gap-3 items-start">
                                 <i class="fa-solid fa-triangle-exclamation text-yellow-600 mt-0.5"></i>
@@ -226,42 +227,90 @@
                 });
 
                 this.initThree(); 
-                setInterval(() => this.checkSecurity(), 10000);
+                
+                // EVALUADOR EN TIEMPO REAL: Revisa la seguridad y la capacidad constantemente
+                setInterval(() => this.checkSecurity(), 3000);
             },
 
             getRealTime: function() {
                 return new Date(Date.now() + serverTimeOffset);
             },
 
+            // FUNCIÓN PARA MOSTRAR PANTALLA DE BLOQUEO PROFESIONAL
+            showBlockScreen: function(tipo, cuposMax = 0) {
+                const overlay = document.getElementById('blocking-overlay');
+                const title = document.getElementById('block-title');
+                const icon = document.getElementById('block-icon');
+                const reason = document.getElementById('block-reason');
+                
+                // Si el alumno YA sacó su ticket exitosamente, no lo bloqueamos
+                if (!document.getElementById('step-3').classList.contains('hidden-section')) return;
+
+                if (tipo === 'lleno') {
+                    overlay.style.border = '15px solid #f59e0b'; // Borde Naranja
+                    icon.className = 'fa-solid fa-bus text-7xl text-yellow-500 mb-6 animate-bounce';
+                    title.innerText = "CAPACIDAD MÁXIMA";
+                    title.className = "text-3xl font-black text-yellow-500 uppercase tracking-tighter";
+                    reason.innerHTML = `Estimado estudiante, los <b>${cuposMax} cupos</b> habilitados por el panel de delegados para este turno han sido completados en su totalidad.<br><br><span style="color:#ffc107;">El sistema no emitirá más tickets.</span>`;
+                } else if (tipo === 'cerrado') {
+                    overlay.style.border = '15px solid #ef4444'; // Borde Rojo
+                    icon.className = 'fa-solid fa-shield-halved text-7xl text-red-600 mb-6 animate-bounce';
+                    title.innerText = "TURNO CERRADO";
+                    title.className = "text-3xl font-black text-white uppercase tracking-tighter";
+                    reason.innerText = "El delegado a cargo ha desactivado la emisión de tickets para este turno.";
+                } else {
+                    overlay.style.border = '15px solid #ef4444'; // Tiempo caducado
+                    icon.className = 'fa-solid fa-clock text-7xl text-red-600 mb-6 animate-bounce';
+                    title.innerText = "SESIÓN CADUCADA";
+                    title.className = "text-3xl font-black text-white uppercase tracking-tighter";
+                    reason.innerText = "El tiempo de seguridad de 1 minuto para firmar el ticket ha expirado. Por favor, vuelva a ingresar desde el portal.";
+                }
+
+                document.getElementById('scanning-overlay').style.display = 'none';
+                overlay.style.display = 'flex';
+            },
+
             checkSecurity: async function() {
                 const isValid = sessionStorage.getItem('valid_session');
                 const authTime = sessionStorage.getItem('auth_timestamp');
                 const currentTime = Date.now();
-                const overlay = document.getElementById('blocking-overlay');
-                const blockReason = document.getElementById('block-reason');
 
-                // LÓGICA DE 1 MINUTO
+                // LÓGICA DE 1 MINUTO DE CADUCIDAD
                 if (isValid !== 'true' || !authTime || (currentTime - authTime > 60000)) {
                     sessionStorage.clear();
-                    overlay.style.display = 'flex';
-                    blockReason.innerText = "El tiempo para firmar tu ticket ha expirado. (Máximo 1 minuto).";
+                    this.showBlockScreen('caducado');
                     return;
                 }
 
-                // SI EL USUARIO YA TIENE EL TICKET EN PANTALLA, NO VOLVEMOS A CONSULTAR
+                // SI EL USUARIO YA TIENE EL TICKET EN PANTALLA, NO INTERFERIMOS
                 if (!document.getElementById('step-3').classList.contains('hidden-section')) return; 
 
                 try {
-                    const snapConfig = await db.ref('sistema/config').once('value');
-                    const config = snapConfig.val() || {};
+                    const fechaID = this.getRealTime().toISOString().split('T')[0];
+                    
+                    // Consultamos Configuración (Cupos) y Viajes (Ocupación) al mismo tiempo
+                    const [snapConfig, snapCount] = await Promise.all([
+                        db.ref('sistema/config').once('value'),
+                        db.ref(`sistema/viajes/${fechaID}/tarde/contador`).once('value')
+                    ]);
 
-                    // REGLA ESTRICTA: El turno debe estar activo en la Base de datos para coincidir con tus reglas de Firebase.
+                    const config = snapConfig.val() || {};
+                    const cuposMaximos = config.cupos_maximos || 40;
+                    const boletosEmitidos = snapCount.val() || 0;
+
+                    // 1. REVISAR SI EL DELEGADO CERRÓ EL TURNO MANUALMENTE
                     if(config.tarde_activo !== true) {
-                        overlay.style.display = 'flex';
-                        blockReason.innerText = "El delegado ha cerrado el turno en el servidor.";
+                        this.showBlockScreen('cerrado');
+                        return;
                     }
+
+                    // 2. AUTO-BLOQUEO PROFESIONAL: Si los boletos emitidos igualan a los cupos máximos
+                    if (boletosEmitidos >= cuposMaximos) {
+                        this.showBlockScreen('lleno', cuposMaximos);
+                    }
+
                 } catch(e) {
-                    console.log("Esperando conexión...");
+                    console.log("Sincronizando estado...");
                 }
             },
 
@@ -291,7 +340,7 @@
                     }
                     const alu = aluSnap.val();
 
-                    // 2. VALIDACIÓN: ¿El delegado ya escaneó este DNI hoy?
+                    // 2. VALIDACIÓN: ¿Ya abordó el bus hoy?
                     msg.innerText = "REVISANDO REGISTROS DE ABORDAJE...";
                     const asisSnap = await db.ref(`sistema/asistencias/${fechaID}/${typedDni}`).once('value');
                     if (asisSnap.exists()) {
@@ -301,56 +350,62 @@
                         return;
                     }
 
-                    // 3. VALIDACIÓN DE CONFIGURACIÓN Y CUPOS
+                    // 3. OBTENER ESTADO EXACTO AL MOMENTO DE DAR CLIC
                     msg.innerText = "CALCULANDO CUPOS EN TIEMPO REAL...";
                     const cfgSnap = await db.ref('sistema/config').once('value');
                     const config = cfgSnap.val() || {};
                     const cuposMaximos = config.cupos_maximos || 40;
 
-                    // IMPORTANTE: Respetar tus propias reglas de Firebase
                     if (config.tarde_activo !== true) {
                         overlay.style.display = 'none';
-                        return Swal.fire('Acceso Denegado', 'El delegado aún no ha activado el turno en la base de datos (Bloqueo por reglas).', 'error');
+                        this.showBlockScreen('cerrado');
+                        return;
                     }
 
                     const refViajeTarde = db.ref(`sistema/viajes/${fechaID}/tarde`);
                     const countSnap = await refViajeTarde.child('contador').once('value');
                     const countActual = countSnap.val() || 0;
 
-                    // Si ya tiene ticket, solo se lo mostramos (sin sumar al contador)
+                    // Si ya tiene ticket creado anteriormente, se lo volvemos a mostrar sin problema
                     const snapReg = await refViajeTarde.child(`registros/${typedDni}`).once('value');
                     if(snapReg.exists()){
                         this.renderFinal(alu, typedDni, snapReg.val());
                         return;
                     }
 
-                    // Si NO tiene ticket, verificamos si el bus ya está lleno antes de crearlo
-                    // (ESTO ARREGLA EL TEMA DE BLOQUEO POR CUPOS LLENOS)
+                    // BLOQUEO ESTRICTO DE CUPOS (El Autobloqueo real)
                     if (countActual >= cuposMaximos) {
                         overlay.style.display = 'none';
-                        document.getElementById('blocking-overlay').style.display = 'flex';
-                        document.getElementById('block-reason').innerText = `Bus lleno. Se ha alcanzado la capacidad máxima de ${cuposMaximos} pasajeros.`;
+                        this.showBlockScreen('lleno', cuposMaximos);
                         return;
                     }
 
-                    // 4. GENERACIÓN DEL TICKET OFICIAL (TRANSACTION MEJORADA)
+                    // 4. GENERACIÓN DEL TICKET (Transaction Segura)
                     msg.innerText = "ASIGNANDO ASIENTO Y GENERANDO CÓDIGO...";
                     refViajeTarde.child('contador').transaction(c => (c || 0) + 1, (err, comm, snapCont) => {
                         
-                        // Si ocurre un error (Por ejemplo las reglas de Firebase rechazan)
                         if(err) {
                             overlay.style.display = 'none';
-                            return Swal.fire('Error', 'Transacción denegada por seguridad de Firebase. Comunique al delegado.', 'error');
+                            return Swal.fire('Error', 'Transacción denegada por seguridad de Firebase.', 'error');
                         }
 
                         if(comm){
+                            // Una vez hecha la transacción, verificamos si por milisegundos se pasó del límite
+                            if (snapCont.val() > cuposMaximos) {
+                                // Revertir la transacción si hubo un choque de usuarios
+                                refViajeTarde.child('contador').set(cuposMaximos); 
+                                overlay.style.display = 'none';
+                                this.showBlockScreen('lleno', cuposMaximos);
+                                return;
+                            }
+
                             const data = { 
                                 nombre: alu.Estudiante || "Estudiante", 
                                 orden: snapCont.val(),
                                 hora: this.getRealTime().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
                             };
                             
-                            // Hacemos el Set y evaluamos que termine exitoso
+                            // Guardar datos
                             refViajeTarde.child(`registros/${typedDni}`).set(data)
                             .then(() => {
                                 this.renderFinal(alu, typedDni, data);
@@ -374,7 +429,6 @@
             renderFinal: function(alu, dni, ticket) {
                 const fechaFormat = this.getRealTime().toLocaleDateString('es-PE', { weekday:'long', year:'numeric', month:'long', day:'numeric' }).toUpperCase();
                 
-                // Mapear los datos visuales
                 document.getElementById('t-fecha').innerText = fechaFormat;
                 document.getElementById('t-nom').innerText = alu.Estudiante || "Estudiante UNAC";
                 document.getElementById('t-fac').innerText = alu.Facultad || "NO REGISTRADA";
@@ -382,25 +436,10 @@
                 document.getElementById('t-cod').innerText = alu.Codigo || alu.codigo || "S/C";
                 document.getElementById('t-hora').innerText = ticket.hora;
                 
-                const badgeContainer = document.getElementById('seat-badge');
-                const area = document.getElementById('seat-area');
-                const icon = document.getElementById('seat-icon');
+                // Formato con dos dígitos para el asiento (Ej: 01, 09, 15)
+                document.getElementById('seat-area').innerText = ticket.orden.toString().padStart(2, '0');
 
-                // Lógica Visual del Asiento
-                db.ref('sistema/config/cupos_maximos').once('value').then(snap => {
-                    const cupos = snap.val() || 40;
-                    if (ticket.orden <= cupos) {
-                        badgeContainer.className = "bg-green-100 border-2 border-green-400 text-green-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mx-auto w-max";
-                        icon.className = "fa-solid fa-chair text-2xl";
-                        area.innerText = "ASIENTO"; 
-                    } else {
-                        badgeContainer.className = "bg-orange-100 border-2 border-orange-400 text-orange-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-orange-500/20 mx-auto w-max";
-                        icon.className = "fa-solid fa-person-walking text-2xl";
-                        area.innerText = "VIAJE DE PIE";
-                    }
-                });
-
-                // GENERACIÓN DE QR EXACTO PARA EL DELEGADO
+                // GENERACIÓN DE QR PARA DELEGADO
                 document.getElementById('qrcode-vip').innerHTML = "";
                 const qrText = `UNAC-V-${dni}-T-${ticket.orden}`;
                 new QRCode(document.getElementById("qrcode-vip"), { 
@@ -412,7 +451,6 @@
                     correctLevel : QRCode.CorrectLevel.H
                 });
 
-                // Animación de aparición
                 setTimeout(() => {
                     document.getElementById('scanning-overlay').style.display = 'none';
                     document.getElementById('step-1').classList.add('hidden-section');
