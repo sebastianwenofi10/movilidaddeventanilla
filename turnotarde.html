@@ -228,7 +228,7 @@
 
                 this.initThree(); 
                 
-                // EVALUADOR EN TIEMPO REAL: Revisa la seguridad y la capacidad constantemente
+                // EVALUADOR EN TIEMPO REAL: Revisa solo si el delegado cerró manualmente o expiró la sesión
                 setInterval(() => this.checkSecurity(), 3000);
             },
 
@@ -286,28 +286,18 @@
                 if (!document.getElementById('step-3').classList.contains('hidden-section')) return; 
 
                 try {
-                    const fechaID = this.getRealTime().toISOString().split('T')[0];
-                    
-                    // Consultamos Configuración (Cupos) y Viajes (Ocupación) al mismo tiempo
-                    const [snapConfig, snapCount] = await Promise.all([
-                        db.ref('sistema/config').once('value'),
-                        db.ref(`sistema/viajes/${fechaID}/tarde/contador`).once('value')
-                    ]);
-
+                    // Consultamos Configuración SOLO para ver si el delegado lo desactivó
+                    const snapConfig = await db.ref('sistema/config').once('value');
                     const config = snapConfig.val() || {};
-                    const cuposMaximos = config.cupos_maximos || 40;
-                    const boletosEmitidos = snapCount.val() || 0;
 
-                    // 1. REVISAR SI EL DELEGADO CERRÓ EL TURNO MANUALMENTE
+                    // REVISAR SI EL DELEGADO CERRÓ EL TURNO MANUALMENTE
                     if(config.tarde_activo !== true) {
                         this.showBlockScreen('cerrado');
                         return;
                     }
-
-                    // 2. AUTO-BLOQUEO PROFESIONAL: Si los boletos emitidos igualan a los cupos máximos
-                    if (boletosEmitidos >= cuposMaximos) {
-                        this.showBlockScreen('lleno', cuposMaximos);
-                    }
+                    
+                    // NOTA IMPORTANTE: Ya NO evaluamos "Cupos Llenos" aquí.
+                    // Eso permite que el alumno siempre pueda poner su DNI.
 
                 } catch(e) {
                     console.log("Sincronizando estado...");
@@ -363,19 +353,23 @@
                     }
 
                     const refViajeTarde = db.ref(`sistema/viajes/${fechaID}/tarde`);
-                    const countSnap = await refViajeTarde.child('contador').once('value');
-                    const countActual = countSnap.val() || 0;
-
-                    // Si ya tiene ticket creado anteriormente, se lo volvemos a mostrar sin problema
+                    
+                    // PASO CLAVE 1: ¿YA TIENE TICKET CREADO?
+                    // Si ya tiene ticket, se lo mostramos DIRECTAMENTE y terminamos el proceso aquí.
                     const snapReg = await refViajeTarde.child(`registros/${typedDni}`).once('value');
                     if(snapReg.exists()){
                         this.renderFinal(alu, typedDni, snapReg.val());
                         return;
                     }
 
-                    // BLOQUEO ESTRICTO DE CUPOS (El Autobloqueo real)
+                    // PASO CLAVE 2: SI LLEGA HASTA AQUÍ, ES PORQUE NO TIENE TICKET.
+                    // Ahora sí verificamos si el bus ya se llenó.
+                    const countSnap = await refViajeTarde.child('contador').once('value');
+                    const countActual = countSnap.val() || 0;
+
                     if (countActual >= cuposMaximos) {
                         overlay.style.display = 'none';
+                        // Mostrar pantalla de bloqueo formal de CUPOS LLENOS
                         this.showBlockScreen('lleno', cuposMaximos);
                         return;
                     }
