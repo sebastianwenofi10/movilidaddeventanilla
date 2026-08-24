@@ -80,7 +80,7 @@
         <p id="flash-subtext" class="text-sm mt-2 font-bold opacity-80 uppercase tracking-widest"></p>
     </div>
 
-    <!-- MODAL DE AJUSTES DEL BUS (MEJORADO) -->
+    <!-- MODAL DE AJUSTES DEL BUS -->
     <div id="modal-ajustes">
         <div class="glass p-6 w-[90%] max-w-sm relative">
             <button onclick="cerrarAjustes()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
@@ -185,19 +185,21 @@
                 
                 <div class="grid grid-cols-2 gap-3">
                     <div id="card-tarde" class="turno-card">
-                        <div id="badge-tarde" class="badge-status badge-off">🔴 Inactivo</div>
+                        <div id="badge-tarde" class="badge-status badge-off">🔴 DESACTIVADO</div>
                         <i class="fa-solid fa-cloud-sun text-2xl text-blue-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Turno Tarde</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Programa: <span id="lbl-hora-tarde" class="text-yellow-500 font-bold">MANUAL</span></p>
-                        <button onclick="toggleTurno('tarde')" id="btn-tarde" class="w-full bg-white/10 hover:bg-blue-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar Turno</button>
+                        <!-- BOTÓN DINÁMICO VERDE / ROJO -->
+                        <button onclick="toggleTurno('tarde')" id="btn-tarde" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Activar Turno</button>
                     </div>
 
                     <div id="card-noche" class="turno-card">
-                        <div id="badge-noche" class="badge-status badge-off">🔴 Inactivo</div>
+                        <div id="badge-noche" class="badge-status badge-off">🔴 DESACTIVADO</div>
                         <i class="fa-solid fa-moon text-2xl text-purple-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Turno Noche</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Programa: <span id="lbl-hora-noche" class="text-yellow-500 font-bold">MANUAL</span></p>
-                        <button onclick="toggleTurno('noche')" id="btn-noche" class="w-full bg-white/10 hover:bg-purple-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar Turno</button>
+                        <!-- BOTÓN DINÁMICO VERDE / ROJO -->
+                        <button onclick="toggleTurno('noche')" id="btn-noche" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Activar Turno</button>
                     </div>
                 </div>
                 
@@ -409,6 +411,7 @@
             }
         }
 
+        // ACTUALIZA VISUALMENTE LOS BOTONES DE LA PANTALLA PRINCIPAL CON VERDE/ROJO
         function actualizarUI_Tarjetas() {
             // TARJETA TARDE
             const cTarde = document.getElementById('card-tarde');
@@ -417,17 +420,19 @@
             document.getElementById('lbl-hora-tarde').innerText = configGlobal.prog_tarde ? (configGlobal.hora_tarde || 'Sin definir') : 'MODO MANUAL';
             
             if(configGlobal.tarde_activo) {
+                // ESTADO: ACTIVADO -> EL BOTÓN DEBE SER ROJO PARA PODER APAGARLO
                 cTarde.classList.add('active'); 
                 bTarde.className = 'badge-status badge-on'; 
                 bTarde.innerText = configGlobal.prog_tarde ? '🟢 PROG. ACTIVO' : '🟢 MANUAL ACTIVO';
-                btnTarde.innerText = 'Cerrar Turno (Forzar)'; 
-                btnTarde.className = 'w-full bg-red-600 hover:bg-red-500 py-2 rounded font-black text-[9px] uppercase transition shadow-lg';
+                btnTarde.innerHTML = '<i class="fa-solid fa-power-off"></i> Desactivar Turno'; 
+                btnTarde.className = 'w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
             } else {
+                // ESTADO: DESACTIVADO -> EL BOTÓN DEBE SER VERDE PARA PODER PRENDERLO
                 cTarde.classList.remove('active'); 
                 bTarde.className = 'badge-status badge-off'; 
-                bTarde.innerText = '🔴 CERRADO';
-                btnTarde.innerText = 'Abrir Turno Manual'; 
-                btnTarde.className = 'w-full bg-white/10 hover:bg-blue-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition';
+                bTarde.innerText = '🔴 DESACTIVADO';
+                btnTarde.innerHTML = '<i class="fa-solid fa-play"></i> Activar Turno'; 
+                btnTarde.className = 'w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1';
             }
 
             // TARJETA NOCHE
@@ -437,30 +442,32 @@
             document.getElementById('lbl-hora-noche').innerText = configGlobal.prog_noche ? (configGlobal.hora_noche || 'Sin definir') : 'MODO MANUAL';
 
             if(configGlobal.noche_activo) {
+                // ESTADO: ACTIVADO -> EL BOTÓN DEBE SER ROJO PARA PODER APAGARLO
                 cNoche.classList.add('active'); 
                 bNoche.className = 'badge-status badge-on'; 
                 bNoche.innerText = configGlobal.prog_noche ? '🟢 PROG. ACTIVO' : '🟢 MANUAL ACTIVO';
-                btnNoche.innerText = 'Cerrar Turno (Forzar)'; 
-                btnNoche.className = 'w-full bg-red-600 hover:bg-red-500 py-2 rounded font-black text-[9px] uppercase transition shadow-lg';
+                btnNoche.innerHTML = '<i class="fa-solid fa-power-off"></i> Desactivar Turno'; 
+                btnNoche.className = 'w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
             } else {
+                // ESTADO: DESACTIVADO -> EL BOTÓN DEBE SER VERDE PARA PODER PRENDERLO
                 cNoche.classList.remove('active'); 
                 bNoche.className = 'badge-status badge-off'; 
-                bNoche.innerText = '🔴 CERRADO';
-                btnNoche.innerText = 'Abrir Turno Manual'; 
-                btnNoche.className = 'w-full bg-white/10 hover:bg-purple-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition';
+                bNoche.innerText = '🔴 DESACTIVADO';
+                btnNoche.innerHTML = '<i class="fa-solid fa-play"></i> Activar Turno'; 
+                btnNoche.className = 'w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1';
             }
         }
 
-        // EL BOTÓN DEL DASHBOARD CAMBIA ESTRICTAMENTE LA VARIABLE "activo" EN FIREBASE
+        // EL BOTÓN DEL DASHBOARD CAMBIA ESTRICTAMENTE LA VARIABLE "activo" EN FIREBASE A SÍ O NO
         function toggleTurno(t) {
             let currentState = (t === 'tarde') ? configGlobal.tarde_activo : configGlobal.noche_activo;
             
             if (currentState) {
                 db.ref(`sistema/config/${t}_activo`).set(false);
-                notificarFlash("TURNO CERRADO", "error", "Se bloqueó la emisión de tickets");
+                notificarFlash("TURNO DESACTIVADO", "error", "Se bloqueó la emisión de tickets");
             } else {
                 db.ref(`sistema/config/${t}_activo`).set(true);
-                notificarFlash("TURNO ABIERTO", "success", "Los alumnos ya pueden sacar ticket");
+                notificarFlash("TURNO ACTIVADO", "success", "Los alumnos ya pueden sacar ticket");
             }
         }
 
