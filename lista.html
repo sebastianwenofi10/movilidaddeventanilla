@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UNAC | Sistema de Votación</title>
+    <title>UNAC | Sistema de Votación Finalizada</title>
     
     <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -59,6 +59,11 @@
             box-shadow: 0 15px 35px rgba(255, 193, 7, 0.2);
             border: 2px solid rgba(255,255,255,0.1);
         }
+
+        /* SCROLLBAR PERSONALIZADO PARA DETALLES */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
 
         @media (max-width: 768px) { .nav-desktop { display: none; } .input-tech { font-size: 1.2rem; } .shift-title { font-size: 28px; } }
     </style>
@@ -151,41 +156,37 @@
 
                 <!-- SECCIÓN DE VOTACIÓN -->
                 <div id="voting-module" class="mb-10 w-full animate-fade-up">
-                    <h3 class="text-3xl font-black uppercase italic text-center text-white mb-6">Encuesta <span class="text-yellow-500">Global</span></h3>
+                    <h3 class="text-3xl font-black uppercase italic text-center text-white mb-6">Resultados <span class="text-yellow-500">Finales</span></h3>
                     
-                    <!-- ================= NUEVO: MENSAJE RECORDATORIO ================= -->
-                    <div class="bg-yellow-500/10 border border-yellow-500/30 p-6 md:p-8 rounded-3xl mb-8 text-left shadow-lg">
-                        <h4 class="text-yellow-500 font-black text-lg md:text-xl mb-4 uppercase tracking-wider flex items-center gap-3">
-                            <i class="fa-solid fa-bullhorn text-2xl animate-pulse"></i> RECORDATORIO IMPORTANTE: CIERRE DE ENCUESTA
+                    <!-- ================= NUEVO: COMUNICADO DE ENCUESTA FINALIZADA ================= -->
+                    <div class="bg-green-500/10 border border-green-500/30 p-6 md:p-8 rounded-3xl mb-8 text-left shadow-[0_0_20px_rgba(34,197,94,0.15)]">
+                        <h4 class="text-green-500 font-black text-lg md:text-xl mb-4 uppercase tracking-wider flex items-center gap-3">
+                            <i class="fa-solid fa-trophy text-2xl animate-pulse"></i> COMUNICADO: ENCUESTA FINALIZADA
                         </h4>
-                        <div class="text-gray-300 text-sm md:text-base leading-relaxed space-y-3 font-medium">
-                            <p>Estimados compañeros:</p>
-                            <p>Como se anunció anteriormente, la encuesta solicitada por ustedes ya se encuentra activa para recopilar sus respuestas.</p>
-                            <p>Les recordamos que la plataforma estará habilitada únicamente hasta el <strong class="text-white">domingo 23 de agosto a las 23:59 h (00:00 h)</strong>. Les pedimos a quienes aún no la han completado que lo hagan a la brevedad posible, ya que no habrá prórroga.</p>
-                            <p>Agradecemos su participación y colaboración para seguir mejorando la gestión de la movilidad. 🚌👍</p>
+                        <div class="text-gray-300 text-sm md:text-base leading-relaxed space-y-3 font-medium" id="winner-announcement">
+                            <!-- Se llena dinámicamente con JS -->
                         </div>
                     </div>
 
-                    <!-- ================= NUEVO: CRONÓMETRO DIGITAL ================= -->
+                    <!-- ================= NUEVO: CRONÓMETRO CERRADO ================= -->
                     <div class="mb-10 flex flex-col items-center">
-                        <p class="text-[11px] text-yellow-500 font-black uppercase mb-4 tracking-[5px]">Tiempo Restante para Cierre</p>
-                        <div class="flex gap-3 md:gap-6 text-center font-mono">
+                        <p class="text-[11px] text-red-500 font-black uppercase mb-4 tracking-[5px] animate-pulse">TIEMPO AGOTADO - VOTACIÓN CERRADA</p>
+                        <div class="flex gap-3 md:gap-6 text-center font-mono opacity-50">
                             <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl">
-                                <span id="cd-days" class="text-3xl md:text-4xl font-black text-white">00</span>
+                                <span class="text-3xl md:text-4xl font-black text-white">00</span>
                                 <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest">Días</span>
                             </div>
                             <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl">
-                                <span id="cd-hours" class="text-3xl md:text-4xl font-black text-white">00</span>
+                                <span class="text-3xl md:text-4xl font-black text-white">00</span>
                                 <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest">Horas</span>
                             </div>
                             <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl">
-                                <span id="cd-minutes" class="text-3xl md:text-4xl font-black text-white">00</span>
+                                <span class="text-3xl md:text-4xl font-black text-white">00</span>
                                 <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest">Min</span>
                             </div>
                             <div class="bg-black/60 border border-white/10 rounded-2xl w-20 h-20 md:w-24 md:h-24 flex flex-col items-center justify-center shadow-xl relative overflow-hidden">
-                                <span id="cd-seconds" class="text-3xl md:text-4xl font-black text-red-500 animate-pulse relative z-10">00</span>
+                                <span class="text-3xl md:text-4xl font-black text-red-500 relative z-10">00</span>
                                 <span class="text-[9px] md:text-[11px] text-gray-500 font-bold uppercase mt-1 tracking-widest relative z-10">Seg</span>
-                                <div class="absolute bottom-0 left-0 w-full h-1 bg-red-600 animate-pulse"></div>
                             </div>
                         </div>
                     </div>
@@ -196,19 +197,52 @@
                         <div id="card-pag" class="bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-500">
                             <h3 class="shift-title text-white" style="font-size: 26px;">PÁGINA</h3>
                             <img src="we12345.jpeg" class="img-spin-3d" alt="Página">
-                            <button id="btn-pag" onclick="Core.vote('pagina')" class="w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg">Votar aquí</button>
+                            <button id="btn-pag" disabled class="w-full bg-gray-700 text-gray-300 font-black p-4 rounded-xl uppercase tracking-widest cursor-not-allowed mt-4 shadow-lg">Calculando...</button>
                         </div>
 
                         <!-- Opción Formulario -->
                         <div id="card-form" class="bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-500">
                             <h3 class="shift-title text-white" style="font-size: 26px;">FORMULARIO</h3>
                             <img src="we1234.jpeg" class="img-spin-3d" alt="Formulario">
-                            <button id="btn-form" onclick="Core.vote('formulario')" class="w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg">Votar aquí</button>
+                            <button id="btn-form" disabled class="w-full bg-gray-700 text-gray-300 font-black p-4 rounded-xl uppercase tracking-widest cursor-not-allowed mt-4 shadow-lg">Calculando...</button>
+                        </div>
+                    </div>
+
+                    <!-- Botón para ver detalles (NUEVO) -->
+                    <div class="mt-8 flex justify-center">
+                        <button onclick="Core.toggleDetails()" class="bg-blue-600/20 border border-blue-500/50 text-blue-400 font-black px-6 py-4 rounded-2xl uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)] w-full md:w-auto flex items-center justify-center gap-3">
+                            <i class="fa-solid fa-users-viewfinder text-xl"></i> Ver Padrón de Votos Detallado
+                        </button>
+                    </div>
+
+                    <!-- Sección oculta de detalles (NUEVO) -->
+                    <div id="details-section" class="hidden mt-8 w-full animate-fade-up">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Columna Detalle PÁGINA -->
+                            <div class="bg-black/50 border border-white/10 rounded-[25px] p-5 shadow-inner">
+                                <div class="text-center mb-4 border-b border-white/10 pb-3">
+                                    <h4 class="text-yellow-500 font-black uppercase tracking-widest">Votos: PÁGINA</h4>
+                                    <p class="text-xs text-gray-400 mt-1 font-bold">Total contabilizados: <span id="count-pag-detail" class="text-white">0</span></p>
+                                </div>
+                                <div id="list-pag" class="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                                    <!-- Se llena con JS -->
+                                </div>
+                            </div>
+                            <!-- Columna Detalle FORMULARIO -->
+                            <div class="bg-black/50 border border-white/10 rounded-[25px] p-5 shadow-inner">
+                                <div class="text-center mb-4 border-b border-white/10 pb-3">
+                                    <h4 class="text-yellow-500 font-black uppercase tracking-widest">Votos: FORMULARIO</h4>
+                                    <p class="text-xs text-gray-400 mt-1 font-bold">Total contabilizados: <span id="count-form-detail" class="text-white">0</span></p>
+                                </div>
+                                <div id="list-form" class="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                                    <!-- Se llena con JS -->
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Mensaje de confirmación de voto -->
-                    <div id="vote-message" class="mt-6 text-center text-[12px] font-black tracking-[2px] uppercase hidden p-4 rounded-xl transition-all duration-500"></div>
+                    <div id="vote-message" class="mt-8 text-center text-[12px] font-black tracking-[2px] uppercase hidden p-5 rounded-2xl transition-all duration-500"></div>
                 </div>
                 
                 <!-- GLOBO 2 -->
@@ -242,53 +276,11 @@
             alumno: null,
             userVote: null,
             voteCounts: { formulario: 0, pagina: 0 },
+            detailsFetched: false,
 
             init: function() { 
                 this.initThree('globe-box'); 
-                this.initCountdown(); // INICIALIZA EL CRONÓMETRO AL CARGAR
-            },
-
-            // ================= LÓGICA DEL CRONÓMETRO =================
-            initCountdown: function() {
-                // Fecha objetivo: 23 de Agosto de 2026 a las 23:59:59
-                const targetDate = new Date("August 23, 2026 23:59:59").getTime();
-                
-                const timer = setInterval(() => {
-                    const now = new Date().getTime();
-                    const distance = targetDate - now;
-
-                    // Elementos del DOM
-                    const elDays = document.getElementById("cd-days");
-                    const elHours = document.getElementById("cd-hours");
-                    const elMins = document.getElementById("cd-minutes");
-                    const elSecs = document.getElementById("cd-seconds");
-
-                    // Si ya pasó la fecha
-                    if (distance < 0) {
-                        clearInterval(timer);
-                        if(elDays) {
-                            elDays.innerText = "00";
-                            elHours.innerText = "00";
-                            elMins.innerText = "00";
-                            elSecs.innerText = "00";
-                        }
-                        return;
-                    }
-
-                    // Cálculos de tiempo
-                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                    // Imprimir resultados con 2 dígitos (ej: 09 en lugar de 9)
-                    if(elDays) {
-                        elDays.innerText = days.toString().padStart(2, '0');
-                        elHours.innerText = hours.toString().padStart(2, '0');
-                        elMins.innerText = minutes.toString().padStart(2, '0');
-                        elSecs.innerText = seconds.toString().padStart(2, '0');
-                    }
-                }, 1000);
+                // Ya no inicializamos el cronómetro porque el tiempo está agotado en duro visualmente.
             },
 
             startScan: async function() {
@@ -308,7 +300,7 @@
                 for (const s of steps) { 
                     msg.innerText = s.t; 
                     bar.style.width = s.p; 
-                    await new Promise(r => setTimeout(r, 2000)); 
+                    await new Promise(r => setTimeout(r, 800)); // Acelerado para pruebas
                 }
 
                 db.ref('alumnos/' + dni).once('value').then(snap => {
@@ -336,66 +328,19 @@
 
             initVoting: function() {
                 const dni = this.alumno.dni;
+                // Escuchar los resultados generales
                 db.ref('sistema/votacion/resultados').on('value', snap => {
                     this.voteCounts = snap.val() || { formulario: 0, pagina: 0 };
-                    if (this.userVote) {
-                        this.renderVoteState(true);
-                    }
-                });
-
-                db.ref(`sistema/votacion/votos_usuarios/${dni}`).on('value', snap => {
-                    if (snap.exists()) {
-                        this.userVote = snap.val();
-                        this.renderVoteState(true);
-                    } else {
-                        this.userVote = null;
-                        this.renderVoteState(false);
-                    }
-                });
-            },
-
-            vote: function(opcion) {
-                if(this.userVote) {
-                    Swal.fire('Atención', 'Ya has registrado tu voto anteriormente.', 'warning');
-                    return;
-                }
-                
-                // VALIDACIÓN EXTRA: Si ya pasó la fecha límite, bloquea el voto
-                const targetDate = new Date("August 23, 2026 23:59:59").getTime();
-                if (new Date().getTime() > targetDate) {
-                    Swal.fire('Encuesta Cerrada', 'El periodo para votar ha finalizado.', 'error');
-                    return;
-                }
-                
-                const dni = this.alumno.dni;
-                Swal.fire({
-                    title: 'Procesando Voto...',
-                    html: 'Conectando con Firebase de manera segura',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
-                });
-
-                const userRef = db.ref(`sistema/votacion/votos_usuarios/${dni}`);
-                userRef.once('value').then(snap => {
-                    if(snap.exists()) {
-                        Swal.fire('Atención', 'Ya has registrado tu voto anteriormente.', 'warning');
-                        return;
-                    }
-                    userRef.set(opcion).then(() => {
-                        db.ref(`sistema/votacion/resultados/${opcion}`).transaction(
-                            curr => (curr || 0) + 1
-                        ).then(() => {
-                            Swal.fire({
-                                title: '¡Voto Contado!',
-                                text: 'Tu voto fue guardado en el sistema general.',
-                                icon: 'success',
-                                background: '#050505', color: '#fff', confirmButtonColor: '#ffc107',
-                                timer: 2000,
-                                showConfirmButton: false
-                            });
-                        });
-                    }).catch(error => {
-                        Swal.fire('Error', 'Hubo un error al procesar el voto', 'error');
+                    
+                    // Escuchar el voto del usuario actual
+                    db.ref(`sistema/votacion/votos_usuarios/${dni}`).on('value', userSnap => {
+                        if (userSnap.exists()) {
+                            this.userVote = userSnap.val();
+                            this.renderVoteState(true);
+                        } else {
+                            this.userVote = null;
+                            this.renderVoteState(false);
+                        }
                     });
                 });
             },
@@ -408,6 +353,7 @@
                 const msg = document.getElementById('vote-message');
                 const statusBox = document.getElementById('status-container');
                 const statusText = document.getElementById('status-text');
+                const winnerText = document.getElementById('winner-announcement');
 
                 const vForm = this.voteCounts.formulario || 0;
                 const vPag = this.voteCounts.pagina || 0;
@@ -416,48 +362,157 @@
                 const percForm = total === 0 ? 0 : Math.round((vForm / total) * 100);
                 const percPag = total === 0 ? 0 : Math.round((vPag / total) * 100);
 
+                // --- 1. LÓGICA DEL COMUNICADO Y GANADOR ---
+                let winner = "EMPATE";
+                if (vForm > vPag) winner = "FORMULARIO";
+                else if (vPag > vForm) winner = "PÁGINA";
+
+                winnerText.innerHTML = `
+                    <p>Estimados compañeros:</p>
+                    <p>La encuesta solicitada sobre la gestión de movilidad ha concluido oficialmente en la fecha límite acordada. Queremos agradecer a todos los estudiantes por su activa y transparente participación.</p>
+                    <p>Los resultados finales verificados por el sistema arrojan que la opción ganadora elegida por la mayoría es: <strong class="text-white text-lg font-black bg-yellow-500/20 px-2 py-1 rounded border border-yellow-500/50">${winner}</strong>.</p>
+                    <p>Debajo pueden verificar el porcentaje total de los votos y en la sección inferior acceder al padrón detallado para validar su voto en la lista pública.</p>
+                `;
+
+                // --- 2. LÓGICA DEL ESTADO DEL USUARIO ---
                 if(!hasVoted) {
                     statusBox.className = "text-center md:text-right bg-red-600/10 p-5 rounded-3xl border border-red-600/30 min-w-[200px] transition-all duration-500";
                     statusText.className = "text-3xl font-black text-red-500";
                     statusText.innerText = "NO VOTÓ";
 
-                    btnForm.innerText = "VOTAR AQUÍ";
-                    btnPag.innerText = "VOTAR AQUÍ";
-                    btnForm.disabled = false;
-                    btnPag.disabled = false;
-                    
-                    btnForm.className = "w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg cursor-pointer";
-                    btnPag.className = "w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest hover:bg-white transition mt-4 shadow-lg cursor-pointer";
-                    cardForm.className = "bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                    cardPag.className = "bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                    msg.classList.add('hidden');
-                    return;
+                    // Mensaje para los que no votaron
+                    msg.classList.remove('hidden');
+                    msg.className = "mt-6 text-center text-[12px] font-black tracking-[2px] uppercase p-5 rounded-2xl bg-red-600/10 text-red-500 border border-red-600/30 animate-fade-up";
+                    msg.innerHTML = `<i class="fa-solid fa-clock text-2xl mb-3 animate-pulse"></i><br>LA ENCUESTA HA CERRADO DEFINITIVAMENTE.<br><span class="text-gray-400 mt-2 block text-[10px]">No registraste tu voto a tiempo.</span>`;
+                } else {
+                    statusBox.className = "text-center md:text-right bg-green-500/10 p-5 rounded-3xl border border-green-500/30 min-w-[200px] transition-all duration-500";
+                    statusText.className = "text-3xl font-black text-green-500";
+                    statusText.innerText = "VOTÓ";
+
+                    // Mensaje para los que votaron
+                    msg.classList.remove('hidden');
+                    msg.className = "mt-6 text-center text-[12px] font-black tracking-[2px] uppercase p-5 rounded-2xl bg-green-500/10 text-green-400 border border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)] animate-fade-up";
+                    msg.innerHTML = `<i class="fa-solid fa-check-to-slot text-3xl mb-3"></i><br>TU VOTO FUE CONTABILIZADO CORRECTAMENTE POR: <span class="text-white bg-green-500/20 px-2 rounded">${this.userVote.toUpperCase()}</span>.<br><span class="text-yellow-500 mt-2 block text-[10px]">VERIFICA QUE ESTÉS EN LA LISTA OFICIAL DEL PADRÓN DETALLADO.</span>`;
                 }
 
-                statusBox.className = "text-center md:text-right bg-green-500/10 p-5 rounded-3xl border border-green-500/30 min-w-[200px] transition-all duration-500";
-                statusText.className = "text-3xl font-black text-green-500";
-                statusText.innerText = "VOTÓ";
-
-                btnForm.innerText = `${percForm}% (${vForm} votos)`;
-                btnPag.innerText = `${percPag}% (${vPag} votos)`;
+                // --- 3. LÓGICA DE LAS TARJETAS (CERRADAS PARA TODOS) ---
+                btnForm.innerText = `${percForm}% (${vForm} VOTOS)`;
+                btnPag.innerText = `${percPag}% (${vPag} VOTOS)`;
                 btnForm.disabled = true; 
                 btnPag.disabled = true;
 
-                if(this.userVote === 'formulario') {
-                    btnForm.className = "w-full bg-green-500 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 shadow-[0_0_20px_rgba(34,197,94,0.4)] cursor-not-allowed";
-                    cardForm.className = "bg-green-500/10 border border-green-500 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                    btnPag.className = "w-full bg-red-600 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 cursor-not-allowed opacity-80";
-                    cardPag.className = "bg-red-600/5 border border-red-600/50 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                } else {
-                    btnPag.className = "w-full bg-green-500 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 shadow-[0_0_20px_rgba(34,197,94,0.4)] cursor-not-allowed";
-                    cardPag.className = "bg-green-500/10 border border-green-500 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                    btnForm.className = "w-full bg-red-600 text-white font-black p-4 rounded-xl uppercase tracking-widest mt-4 cursor-not-allowed opacity-80";
-                    cardForm.className = "bg-red-600/5 border border-red-600/50 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300";
-                }
+                // Estilizar la tarjeta ganadora general (Formulario)
+                if(winner === "FORMULARIO") {
+                    btnForm.className = "w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest mt-4 shadow-[0_0_20px_rgba(255,193,7,0.4)] cursor-default";
+                    cardForm.className = "bg-yellow-500/10 border-2 border-yellow-500 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300 relative overflow-hidden";
+                    // Indicador de Ganador visual
+                    cardForm.innerHTML += `<div class="absolute top-4 right-4 text-yellow-500 text-2xl animate-bounce"><i class="fa-solid fa-crown"></i></div>`;
 
-                msg.classList.remove('hidden');
-                msg.className = "mt-6 text-center text-[12px] font-black tracking-[2px] uppercase p-4 rounded-xl bg-green-500/20 text-green-400 border border-green-500/50 animate-fade-up";
-                msg.innerHTML = `<i class="fa-solid fa-circle-check text-lg mb-2"></i><br>TU VOTO FUE CONTADO EXITOSAMENTE.<br>VOTASTE POR: <span class="text-white">${this.userVote.toUpperCase()}</span>`;
+                    btnPag.className = "w-full bg-black border border-white/20 text-gray-400 font-bold p-4 rounded-xl uppercase tracking-widest mt-4 cursor-default";
+                    cardPag.className = "bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300 opacity-60";
+                } 
+                // Estilizar la tarjeta ganadora general (Página)
+                else if(winner === "PÁGINA") {
+                    btnPag.className = "w-full bg-yellow-500 text-black font-black p-4 rounded-xl uppercase tracking-widest mt-4 shadow-[0_0_20px_rgba(255,193,7,0.4)] cursor-default";
+                    cardPag.className = "bg-yellow-500/10 border-2 border-yellow-500 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300 relative overflow-hidden";
+                    cardPag.innerHTML += `<div class="absolute top-4 right-4 text-yellow-500 text-2xl animate-bounce"><i class="fa-solid fa-crown"></i></div>`;
+
+                    btnForm.className = "w-full bg-black border border-white/20 text-gray-400 font-bold p-4 rounded-xl uppercase tracking-widest mt-4 cursor-default";
+                    cardForm.className = "bg-white/5 border border-white/10 p-6 rounded-[35px] text-center flex flex-col items-center justify-between transition-all duration-300 opacity-60";
+                }
+            },
+
+            // ================= NUEVO: CARGAR DETALLES DE VOTANTES =================
+            toggleDetails: function() {
+                const sec = document.getElementById('details-section');
+                if(sec.classList.contains('hidden')) {
+                    sec.classList.remove('hidden');
+                    if(!this.detailsFetched) this.fetchVotersDetails();
+                } else {
+                    sec.classList.add('hidden');
+                }
+            },
+
+            fetchVotersDetails: async function() {
+                Swal.fire({
+                    title: 'Generando Padrón...',
+                    html: 'Obteniendo información oficial y cifrando datos sensibles.',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                try {
+                    // Obtener todos los votos registrados
+                    const snapVotes = await db.ref('sistema/votacion/votos_usuarios').once('value');
+                    const votesObj = snapVotes.val() || {};
+                    const votersDnis = Object.keys(votesObj);
+
+                    const listPag = document.getElementById('list-pag');
+                    const listForm = document.getElementById('list-form');
+                    const countPag = document.getElementById('count-pag-detail');
+                    const countForm = document.getElementById('count-form-detail');
+                    
+                    listPag.innerHTML = ''; listForm.innerHTML = '';
+                    let cPag = 0, cForm = 0;
+
+                    // Para no saturar con miles de peticiones simultáneas, 
+                    // extraemos la data de los alumnos que votaron
+                    const fetchPromises = votersDnis.map(dni => {
+                        return db.ref(`alumnos/${dni}`).once('value').then(alumnoSnap => {
+                            return {
+                                dni: dni,
+                                vote: votesObj[dni],
+                                data: alumnoSnap.val() || { Estudiante: 'ALUMNO NO ENCONTRADO EN PADRÓN', Facultad: 'SIN FACULTAD' }
+                            };
+                        });
+                    });
+
+                    const results = await Promise.all(fetchPromises);
+
+                    // Renderizar los resultados
+                    results.forEach(item => {
+                        // Cifrar el DNI mostrando solo los 2 primeros dígitos
+                        const maskedDni = item.dni.substring(0, 2) + '******';
+                        const nombre = item.data.Estudiante;
+                        const fac = item.data.Facultad;
+
+                        // Highlight si es el voto del propio usuario
+                        const isMe = (item.dni === this.alumno.dni);
+                        const borderStyle = isMe ? "border-green-500 bg-green-500/10" : "border-white/5 bg-black/40";
+                        const nameColor = isMe ? "text-green-400" : "text-white";
+                        const youTag = isMe ? `<span class="bg-green-600 text-white text-[8px] px-1 rounded ml-2">TÚ</span>` : "";
+
+                        const html = `
+                            <div class="border ${borderStyle} p-3 rounded-xl text-left shadow-sm transition-all hover:bg-white/5">
+                                <p class="text-[10px] md:text-xs font-black ${nameColor} uppercase tracking-wider">${nombre} ${youTag}</p>
+                                <p class="text-[9px] text-gray-400 font-mono mt-1 font-bold">DNI: <span class="text-gray-300">${maskedDni}</span> | ${fac}</p>
+                            </div>
+                        `;
+
+                        if (item.vote === 'pagina') {
+                            listPag.innerHTML += html;
+                            cPag++;
+                        } else {
+                            listForm.innerHTML += html;
+                            cForm++;
+                        }
+                    });
+
+                    // Si no hay votos, mostrar mensaje
+                    if (cPag === 0) listPag.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">Sin votos registrados</p>`;
+                    if (cForm === 0) listForm.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">Sin votos registrados</p>`;
+
+                    // Actualizar contadores locales
+                    countPag.innerText = cPag;
+                    countForm.innerText = cForm;
+
+                    this.detailsFetched = true;
+                    Swal.close();
+
+                } catch (e) {
+                    console.error(e);
+                    Swal.fire('Error', 'Hubo un problema al cargar el padrón de votos.', 'error');
+                }
             },
 
             handleNotRegistered: function(dni) {
