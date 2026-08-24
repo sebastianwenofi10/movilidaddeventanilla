@@ -21,7 +21,7 @@
         :root { --accent: #ffc107; --dark: #050505; --red-bg: #ef4444; --green-bg: #10b981; }
         body { background-color: var(--dark); font-family: 'Inter', sans-serif; color: white; margin: 0; min-height: 100vh; }
         .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px); border-radius: 20px; }
-        input { width: 100%; background: rgba(0,0,0,0.5) !important; border: 1px solid rgba(255,193,7,0.3) !important; color: white !important; padding: 12px; border-radius: 10px; margin-bottom: 15px; outline: none; text-align: center; font-weight: 700; }
+        input[type="number"], input[type="time"], input[type="password"] { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,193,7,0.3); color: white; padding: 12px; border-radius: 10px; margin-bottom: 15px; outline: none; text-align: center; font-weight: 700; }
         
         .btn-gold { background: var(--accent); color: black; width: 100%; padding: 15px; border-radius: 10px; font-weight: 900; text-transform: uppercase; transition: 0.3s; cursor: pointer; }
         #reader { width: 100% !important; border: none !important; border-radius: 15px; overflow: hidden; background: #111; }
@@ -34,6 +34,7 @@
         }
         .notif-success { background: var(--green-bg); }
         .notif-error { background: var(--red-bg); }
+        .notif-warning { background: #f59e0b; }
 
         /* DISEÑO DE TARJETAS DE TURNOS */
         .turno-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; text-align: center; transition: 0.3s; position: relative; overflow: hidden; }
@@ -44,6 +45,14 @@
 
         /* VENTANA MODAL AJUSTES */
         #modal-ajustes { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        
+        /* SWITCH ESTILO iOS */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .4s; border-radius: 34px; border: 1px solid rgba(255,255,255,0.1); }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); background-color: black; }
 
         /* LISTA MAESTRA Y ETIQUETAS */
         #master-list-view { position: fixed; inset: 0; background: #050505; z-index: 1000; display: none; flex-direction: column; }
@@ -58,6 +67,8 @@
         
         .progress-bar { background: rgba(255,255,255,0.1); border-radius: 10px; height: 10px; width: 100%; overflow: hidden; margin-top: 5px; }
         .progress-fill { background: var(--accent); height: 100%; width: 0%; transition: 0.5s; }
+
+        .hidden-config { display: none; }
     </style>
 </head>
 <body>
@@ -69,20 +80,44 @@
         <p id="flash-subtext" class="text-sm mt-2 font-bold opacity-80 uppercase tracking-widest"></p>
     </div>
 
-    <!-- MODAL DE AJUSTES DEL BUS -->
+    <!-- MODAL DE AJUSTES DEL BUS (MEJORADO) -->
     <div id="modal-ajustes">
         <div class="glass p-6 w-[90%] max-w-sm relative">
             <button onclick="cerrarAjustes()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
             <h2 class="text-xl font-black text-yellow-500 uppercase italic mb-4"><i class="fa-solid fa-gears"></i> Ajustes del Bus</h2>
             
-            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left">Cantidad Total de Asientos</label>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mb-1">Cantidad Total de Asientos</label>
             <input type="number" id="cfg-cupos" placeholder="Ej: 40">
 
-            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mt-2">Hora Programada Tarde <span class="text-red-500 text-[8px]">(Vacío = Manual)</span></label>
-            <input type="time" id="cfg-hora-tarde" class="text-2xl">
+            <!-- CONFIGURACIÓN TARDE -->
+            <div class="bg-black/40 border border-white/5 p-3 rounded-xl mb-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-black text-white uppercase tracking-widest">Activar con Programación (Tarde)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="cfg-tarde-prog" onchange="toggleTimeConfig('tarde')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div id="box-hora-tarde" class="mt-3 hidden-config">
+                    <label class="text-[9px] text-gray-400 uppercase font-bold block mb-1">Definir Hora (Tarde)</label>
+                    <input type="time" id="cfg-hora-tarde" class="text-xl mb-0">
+                </div>
+            </div>
 
-            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mt-2">Hora Programada Noche <span class="text-red-500 text-[8px]">(Vacío = Manual)</span></label>
-            <input type="time" id="cfg-hora-noche" class="text-2xl">
+            <!-- CONFIGURACIÓN NOCHE -->
+            <div class="bg-black/40 border border-white/5 p-3 rounded-xl mb-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-black text-white uppercase tracking-widest">Activar con Programación (Noche)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="cfg-noche-prog" onchange="toggleTimeConfig('noche')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div id="box-hora-noche" class="mt-3 hidden-config">
+                    <label class="text-[9px] text-gray-400 uppercase font-bold block mb-1">Definir Hora (Noche)</label>
+                    <input type="time" id="cfg-hora-noche" class="text-xl mb-0">
+                </div>
+            </div>
 
             <button onclick="guardarAjustes()" class="btn-gold shadow-lg mt-2"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
         </div>
@@ -153,23 +188,24 @@
                         <div id="badge-tarde" class="badge-status badge-off">🔴 Inactivo</div>
                         <i class="fa-solid fa-cloud-sun text-2xl text-blue-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Turno Tarde</h4>
-                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Programa: <span id="lbl-hora-tarde" class="text-yellow-500 font-bold">--:--</span></p>
-                        <button onclick="toggleTurno('tarde')" id="btn-tarde" class="w-full bg-white/10 hover:bg-blue-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar Manual</button>
+                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Programa: <span id="lbl-hora-tarde" class="text-yellow-500 font-bold">MANUAL</span></p>
+                        <button onclick="toggleTurno('tarde')" id="btn-tarde" class="w-full bg-white/10 hover:bg-blue-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar Turno</button>
                     </div>
 
                     <div id="card-noche" class="turno-card">
                         <div id="badge-noche" class="badge-status badge-off">🔴 Inactivo</div>
                         <i class="fa-solid fa-moon text-2xl text-purple-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Turno Noche</h4>
-                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Programa: <span id="lbl-hora-noche" class="text-yellow-500 font-bold">--:--</span></p>
-                        <button onclick="toggleTurno('noche')" id="btn-noche" class="w-full bg-white/10 hover:bg-purple-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar Manual</button>
+                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Programa: <span id="lbl-hora-noche" class="text-yellow-500 font-bold">MANUAL</span></p>
+                        <button onclick="toggleTurno('noche')" id="btn-noche" class="w-full bg-white/10 hover:bg-purple-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition">Activar Turno</button>
                     </div>
                 </div>
                 
+                <!-- BARRA DE OCUPACIÓN -->
                 <div class="mt-4 p-3 glass relative">
                     <div class="flex justify-between text-[10px] font-black uppercase tracking-widest mb-1">
                         <span class="text-yellow-500">Ocupación del Bus</span>
-                        <span id="txt-cupos">0 / 40</span>
+                        <span id="txt-cupos" class="font-bold">0 / 40</span>
                     </div>
                     <div class="progress-bar"><div id="barra-cupos" class="progress-fill"></div></div>
                 </div>
@@ -183,7 +219,12 @@
                 </button>
             </div>
 
-            <div class="glass p-2 mb-6 border-2 border-yellow-500/30">
+            <div class="glass p-2 mb-6 border-2 border-yellow-500/30 relative">
+                <!-- Capa de bloqueo temporal de escáner -->
+                <div id="scanner-cooldown-overlay" class="absolute inset-0 bg-black/80 z-50 hidden flex-col items-center justify-center rounded-xl backdrop-blur-sm">
+                    <i class="fa-solid fa-shield-halved text-4xl text-yellow-500 mb-2 animate-bounce"></i>
+                    <p class="text-[10px] font-black uppercase tracking-widest text-white">Procesando código...</p>
+                </div>
                 <div id="reader"></div>
             </div>
 
@@ -215,7 +256,7 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR INVISIBLE PARA FOTO (SIN WHATSAPP) -->
+    <!-- CONTENEDOR INVISIBLE PARA FOTO -->
     <div id="reporte-foto-container">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
             <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; font-weight: 900;">🚌 Lista Oficial UNAC</h1>
@@ -233,7 +274,7 @@
             <tbody id="reporte-tbody"></tbody>
         </table>
         
-        <!-- FIRMA DE AUTOR (SEBASTIAN) -->
+        <!-- FIRMA DE AUTOR -->
         <div style="margin-top: 25px; text-align: center; font-size: 10px; color: #777; border-top: 2px dashed #ccc; padding-top: 15px; font-weight: 900; letter-spacing: 2px;">
             SISTEMA GENERADO POR SEBASTIAN
         </div>
@@ -254,15 +295,21 @@
         const db = firebase.database();
 
         const soundOk = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        const soundError = new Audio('https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3');
 
         let delegadoActivo = localStorage.getItem('unac_session_dni') || "";
         const DELEGADOS = ["71886034", "77570731"];
 
         let listaGlobalAlumnos = []; 
-        let configGlobal = { cupos: 40, hora_tarde: '', hora_noche: '', tarde_activo: false, noche_activo: false };
+        let configGlobal = { 
+            cupos: 40, hora_tarde: '', hora_noche: '', 
+            tarde_activo: false, noche_activo: false,
+            prog_tarde: false, prog_noche: false
+        };
+        
         let serverTimeOffset = 0; 
+        let isScannerCooldown = false; // Bandera para evitar doble escaneo rápido
 
-        // Función para obtener la fecha UTC exacta sincronizada
         function getFechaID() {
             return new Date(Date.now() + serverTimeOffset).toISOString().split('T')[0];
         }
@@ -287,111 +334,133 @@
 
         function cerrarSesion() { localStorage.removeItem('unac_session_dni'); location.reload(); }
 
+        // MUESTRA U OCULTA LOS CAMPOS DE HORA EN EL MODAL
+        function toggleTimeConfig(turno) {
+            const isChecked = document.getElementById(`cfg-${turno}-prog`).checked;
+            document.getElementById(`box-hora-${turno}`).style.display = isChecked ? 'block' : 'none';
+        }
+
         function abrirAjustes() {
             document.getElementById('cfg-cupos').value = configGlobal.cupos;
-            document.getElementById('cfg-hora-tarde').value = configGlobal.hora_tarde || "";
-            document.getElementById('cfg-hora-noche').value = configGlobal.hora_noche || "";
+            
+            document.getElementById('cfg-tarde-prog').checked = configGlobal.prog_tarde;
+            document.getElementById('cfg-hora-tarde').value = configGlobal.hora_tarde;
+            toggleTimeConfig('tarde');
+
+            document.getElementById('cfg-noche-prog').checked = configGlobal.prog_noche;
+            document.getElementById('cfg-hora-noche').value = configGlobal.hora_noche;
+            toggleTimeConfig('noche');
+
             document.getElementById('modal-ajustes').style.display = 'flex';
         }
+        
         function cerrarAjustes() { document.getElementById('modal-ajustes').style.display = 'none'; }
         
         function guardarAjustes() {
             const c = parseInt(document.getElementById('cfg-cupos').value) || 40;
-            const ht = document.getElementById('cfg-hora-tarde').value || ""; 
-            const hn = document.getElementById('cfg-hora-noche').value || "";
             
-            db.ref('sistema/config').update({ cupos_maximos: c, hora_tarde: ht, hora_noche: hn });
-            notificarFlash("GUARDADO", "success", "Ajustes actualizados");
+            const prog_t = document.getElementById('cfg-tarde-prog').checked;
+            const ht = prog_t ? (document.getElementById('cfg-hora-tarde').value || "") : "";
+            
+            const prog_n = document.getElementById('cfg-noche-prog').checked;
+            const hn = prog_n ? (document.getElementById('cfg-hora-noche').value || "") : "";
+            
+            db.ref('sistema/config').update({ 
+                cupos_maximos: c, 
+                prog_tarde: prog_t, hora_tarde: ht, 
+                prog_noche: prog_n, hora_noche: hn 
+            });
+
+            // Actualizamos la UI al instante
+            document.getElementById('txt-cupos').innerText = `0 / ${c}`;
+            notificarFlash("AJUSTES GUARDADOS", "success", "Configuración de bus actualizada");
             cerrarAjustes();
         }
 
-        function actualizarUI_Tarjetas() {
+        // EVALUADOR DEL CRONÓMETRO INTERNO PARA TURNOS PROGRAMADOS
+        function evaluarTurnosAutomaticos() {
             const now = new Date(Date.now() + serverTimeOffset);
             const currentMins = now.getHours() * 60 + now.getMinutes();
 
-            const parseTime = (timeStr) => {
-                if(!timeStr) return 9999; 
-                const p = timeStr.split(':');
-                return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+            const checkTime = (timeStr) => {
+                if(!timeStr) return 9999;
+                return parseInt(timeStr.split(':')[0], 10) * 60 + parseInt(timeStr.split(':')[1], 10);
             };
 
-            const tTarde = parseTime(configGlobal.hora_tarde);
-            const tNoche = parseTime(configGlobal.hora_noche);
+            // Evaluar Turno Tarde
+            if (configGlobal.prog_tarde && configGlobal.hora_tarde) {
+                const limitTarde = checkTime(configGlobal.hora_tarde);
+                const limitNoche = checkTime(configGlobal.hora_noche);
+                
+                // Si ya es hora y no está activo en Firebase, activarlo automáticamente.
+                if (currentMins >= limitTarde && currentMins < limitNoche && !configGlobal.tarde_activo) {
+                    db.ref('sistema/config/tarde_activo').set(true);
+                    notificarFlash("HORA ALCANZADA", "success", "Turno Tarde Abierto Automáticamente");
+                }
+            }
 
-            const isTardeTime = (currentMins >= tTarde && currentMins < tNoche);
-            const isNocheTime = (currentMins >= tNoche);
+            // Evaluar Turno Noche
+            if (configGlobal.prog_noche && configGlobal.hora_noche) {
+                const limitNoche = checkTime(configGlobal.hora_noche);
+                if (currentMins >= limitNoche && !configGlobal.noche_activo) {
+                    db.ref('sistema/config/noche_activo').set(true);
+                    notificarFlash("HORA ALCANZADA", "success", "Turno Noche Abierto Automáticamente");
+                }
+            }
+        }
 
-            const isTardeActive = configGlobal.tarde_activo || isTardeTime;
-            const isNocheActive = configGlobal.noche_activo || isNocheTime;
-
+        function actualizarUI_Tarjetas() {
+            // TARJETA TARDE
             const cTarde = document.getElementById('card-tarde');
             const bTarde = document.getElementById('badge-tarde');
             const btnTarde = document.getElementById('btn-tarde');
-            document.getElementById('lbl-hora-tarde').innerText = configGlobal.hora_tarde || 'MANUAL';
+            document.getElementById('lbl-hora-tarde').innerText = configGlobal.prog_tarde ? (configGlobal.hora_tarde || 'Sin definir') : 'MODO MANUAL';
             
-            if(isTardeActive) {
+            if(configGlobal.tarde_activo) {
                 cTarde.classList.add('active'); 
                 bTarde.className = 'badge-status badge-on'; 
-                bTarde.innerText = isTardeTime ? '🟢 PROG. ACTIVO' : '🟢 ACTIVO';
-                btnTarde.innerText = 'Cerrar / Desactivar'; 
+                bTarde.innerText = configGlobal.prog_tarde ? '🟢 PROG. ACTIVO' : '🟢 MANUAL ACTIVO';
+                btnTarde.innerText = 'Cerrar Turno (Forzar)'; 
                 btnTarde.className = 'w-full bg-red-600 hover:bg-red-500 py-2 rounded font-black text-[9px] uppercase transition shadow-lg';
             } else {
                 cTarde.classList.remove('active'); 
                 bTarde.className = 'badge-status badge-off'; 
-                bTarde.innerText = '🔴 Inactivo';
-                btnTarde.innerText = 'Activar Manual'; 
+                bTarde.innerText = '🔴 CERRADO';
+                btnTarde.innerText = 'Abrir Turno Manual'; 
                 btnTarde.className = 'w-full bg-white/10 hover:bg-blue-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition';
             }
 
+            // TARJETA NOCHE
             const cNoche = document.getElementById('card-noche');
             const bNoche = document.getElementById('badge-noche');
             const btnNoche = document.getElementById('btn-noche');
-            document.getElementById('lbl-hora-noche').innerText = configGlobal.hora_noche || 'MANUAL';
+            document.getElementById('lbl-hora-noche').innerText = configGlobal.prog_noche ? (configGlobal.hora_noche || 'Sin definir') : 'MODO MANUAL';
 
-            if(isNocheActive) {
+            if(configGlobal.noche_activo) {
                 cNoche.classList.add('active'); 
                 bNoche.className = 'badge-status badge-on'; 
-                bNoche.innerText = isNocheTime ? '🟢 PROG. ACTIVO' : '🟢 ACTIVO';
-                btnNoche.innerText = 'Cerrar / Desactivar'; 
+                bNoche.innerText = configGlobal.prog_noche ? '🟢 PROG. ACTIVO' : '🟢 MANUAL ACTIVO';
+                btnNoche.innerText = 'Cerrar Turno (Forzar)'; 
                 btnNoche.className = 'w-full bg-red-600 hover:bg-red-500 py-2 rounded font-black text-[9px] uppercase transition shadow-lg';
             } else {
                 cNoche.classList.remove('active'); 
                 bNoche.className = 'badge-status badge-off'; 
-                bNoche.innerText = '🔴 Inactivo';
-                btnNoche.innerText = 'Activar Manual'; 
+                bNoche.innerText = '🔴 CERRADO';
+                btnNoche.innerText = 'Abrir Turno Manual'; 
                 btnNoche.className = 'w-full bg-white/10 hover:bg-purple-600 py-2 rounded font-black text-[9px] uppercase border border-white/20 transition';
             }
         }
 
+        // EL BOTÓN DEL DASHBOARD CAMBIA ESTRICTAMENTE LA VARIABLE "activo" EN FIREBASE
         function toggleTurno(t) {
-            const now = new Date(Date.now() + serverTimeOffset);
-            const currentMins = now.getHours() * 60 + now.getMinutes();
-            const parseTime = (timeStr) => {
-                if(!timeStr) return 9999;
-                const p = timeStr.split(':');
-                return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
-            };
-
-            const tTarde = parseTime(configGlobal.hora_tarde);
-            const tNoche = parseTime(configGlobal.hora_noche);
-
-            const isTardeTime = (currentMins >= tTarde && currentMins < tNoche);
-            const isNocheTime = (currentMins >= tNoche);
-
-            let isTimeActive = (t === 'tarde') ? isTardeTime : isNocheTime;
-            let isManualActive = (t === 'tarde') ? configGlobal.tarde_activo : configGlobal.noche_activo;
+            let currentState = (t === 'tarde') ? configGlobal.tarde_activo : configGlobal.noche_activo;
             
-            if (isTimeActive || isManualActive) {
+            if (currentState) {
                 db.ref(`sistema/config/${t}_activo`).set(false);
-                if (isTimeActive) {
-                    db.ref(`sistema/config/hora_${t}`).set('');
-                    notificarFlash("CIERRE FORZADO", "error", "Hora programada eliminada");
-                } else {
-                    notificarFlash("TURNO CERRADO", "error", "Cierre manual");
-                }
+                notificarFlash("TURNO CERRADO", "error", "Se bloqueó la emisión de tickets");
             } else {
                 db.ref(`sistema/config/${t}_activo`).set(true);
-                notificarFlash("TURNO ABIERTO", "success", "Apertura manual");
+                notificarFlash("TURNO ABIERTO", "success", "Los alumnos ya pueden sacar ticket");
             }
         }
 
@@ -399,36 +468,29 @@
             const scanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 });
             scanner.render(onScanSuccess);
 
+            // Reloj estricto con Firebase
             db.ref('.info/serverTimeOffset').on('value', snap => {
                 serverTimeOffset = snap.val() || 0;
+            });
+            setInterval(evaluarTurnosAutomaticos, 15000); // Revisa cada 15 seg si debe activar un turno programado
+
+            // Escuchador de Configuraciones y Ajustes Globales
+            db.ref('sistema/config').on('value', snap => {
+                const dataRT = snap.val() || {};
+                configGlobal.cupos = dataRT.cupos_maximos || 40;
+                
+                configGlobal.prog_tarde = dataRT.prog_tarde || false;
+                configGlobal.hora_tarde = dataRT.hora_tarde || '';
+                configGlobal.tarde_activo = dataRT.tarde_activo || false;
+                
+                configGlobal.prog_noche = dataRT.prog_noche || false;
+                configGlobal.hora_noche = dataRT.hora_noche || '';
+                configGlobal.noche_activo = dataRT.noche_activo || false;
+                
                 actualizarUI_Tarjetas();
             });
-            setInterval(actualizarUI_Tarjetas, 15000);
 
-            db.ref('sistema/config').once('value', snap => {
-                let data = snap.val() || {};
-                const fechaHoy = getFechaID();
-                
-                if (data.fecha_sistema !== fechaHoy) {
-                    db.ref('sistema/config').update({
-                        tarde_activo: false, noche_activo: false,
-                        hora_tarde: '', hora_noche: '',
-                        fecha_sistema: fechaHoy
-                    });
-                }
-                
-                db.ref('sistema/config').on('value', snapRealtime => {
-                    const dataRT = snapRealtime.val() || {};
-                    configGlobal.cupos = dataRT.cupos_maximos || 40;
-                    configGlobal.hora_tarde = dataRT.hora_tarde || '';
-                    configGlobal.hora_noche = dataRT.hora_noche || '';
-                    configGlobal.tarde_activo = dataRT.tarde_activo || false;
-                    configGlobal.noche_activo = dataRT.noche_activo || false;
-                    
-                    actualizarUI_Tarjetas();
-                });
-            });
-
+            // Escuchador Principal de Viajes y Asistencias
             db.ref('sistema').on('value', snap => {
                 const fechaHoy = getFechaID();
                 const data = snap.val() || {};
@@ -437,19 +499,13 @@
                 
                 let combined = []; let historyData = []; let ticketsTurnoActivo = 0;
 
-                const now = new Date(Date.now() + serverTimeOffset);
-                const currentMins = now.getHours() * 60 + now.getMinutes();
-                const tTarde = (configGlobal.hora_tarde) ? parseInt(configGlobal.hora_tarde.split(':')[0])*60 + parseInt(configGlobal.hora_tarde.split(':')[1]) : 9999;
-                const tNoche = (configGlobal.hora_noche) ? parseInt(configGlobal.hora_noche.split(':')[0])*60 + parseInt(configGlobal.hora_noche.split(':')[1]) : 9999;
-
-                const isTardeActive = configGlobal.tarde_activo || (currentMins >= tTarde && currentMins < tNoche);
-                const isNocheActive = configGlobal.noche_activo || (currentMins >= tNoche);
-
                 ['tarde', 'noche'].forEach(turno => {
                     const tReg = viajes[turno] ? viajes[turno].registros : null;
                     if (tReg) {
                         let cantidad = Object.keys(tReg).length;
-                        if((turno === 'tarde' && isTardeActive) || (turno === 'noche' && isNocheActive)){
+                        
+                        // Solo sumamos los tickets a la barra si el turno respectivo está ACTIVO
+                        if((turno === 'tarde' && configGlobal.tarde_activo) || (turno === 'noche' && configGlobal.noche_activo)){
                             ticketsTurnoActivo += cantidad;
                         }
 
@@ -464,22 +520,16 @@
                 combined.sort((a, b) => a.orden - b.orden);
                 listaGlobalAlumnos = combined;
 
+                // ACTUALIZACIÓN DINÁMICA DE LA BARRA USANDO LOS CUPOS REALES
                 document.getElementById('txt-cupos').innerText = `${ticketsTurnoActivo} / ${configGlobal.cupos}`;
                 let porcentaje = (ticketsTurnoActivo / configGlobal.cupos) * 100;
                 document.getElementById('barra-cupos').style.width = `${Math.min(porcentaje, 100)}%`;
                 document.getElementById('barra-cupos').style.background = porcentaje >= 100 ? "#ef4444" : "#ffc107";
 
+                // AUTO CIERRE SI SE LLENA
                 if(ticketsTurnoActivo >= configGlobal.cupos) {
-                    if(isTardeActive) { 
-                        db.ref('sistema/config/tarde_activo').set(false); 
-                        db.ref('sistema/config/hora_tarde').set('');
-                        notificarFlash("BUS LLENO", "error", "Turno Tarde Cerrado"); 
-                    }
-                    if(isNocheActive) { 
-                        db.ref('sistema/config/noche_activo').set(false); 
-                        db.ref('sistema/config/hora_noche').set('');
-                        notificarFlash("BUS LLENO", "error", "Turno Noche Cerrado"); 
-                    }
+                    if(configGlobal.tarde_activo) { db.ref('sistema/config/tarde_activo').set(false); notificarFlash("BUS LLENO", "error", "Turno Tarde Autocerrado"); }
+                    if(configGlobal.noche_activo) { db.ref('sistema/config/noche_activo').set(false); notificarFlash("BUS LLENO", "error", "Turno Noche Autocerrado"); }
                 }
 
                 document.getElementById('contador-glo').innerText = Object.keys(asistencias).length;
@@ -489,7 +539,13 @@
             });
         }
 
+        // SISTEMA DE ESCANEO CON BLOQUEO (COOLDOWN) PARA EVITAR DOBLE LECTURA
         async function onScanSuccess(text) {
+            if (isScannerCooldown) return; // Si está en pausa, ignora cualquier QR que vea
+            
+            isScannerCooldown = true;
+            document.getElementById('scanner-cooldown-overlay').style.display = 'flex'; // Pantalla negra visual en la cámara
+
             let dniScanned = ""; let tKey = "";
             
             if (text.startsWith('UNAC-V-')) {
@@ -503,19 +559,44 @@
                 else if (text.includes('-')) { const p = text.split('-'); dniScanned = p[2]; tKey = p[3].toLowerCase() === 't' ? 'tarde' : 'noche'; }
             }
             
-            if(!dniScanned) return;
+            const liberarCamara = () => {
+                setTimeout(() => {
+                    isScannerCooldown = false;
+                    document.getElementById('scanner-cooldown-overlay').style.display = 'none';
+                }, 3000); // 3 SEGUNDOS DE PAUSA PARA EL SIGUIENTE ESCANEO
+            };
+
+            if(!dniScanned) {
+                notificarFlash("QR INVÁLIDO", "error", "Formato no reconocido");
+                if(soundError.readyState) soundError.play();
+                return liberarCamara();
+            }
 
             const fechaHoy = getFechaID();
+            
+            // VALIDACIÓN: ¿EL TICKET ES DE HOY Y EXISTE EN LA BASE DE DATOS?
             const snapTicket = await db.ref(`sistema/viajes/${fechaHoy}/${tKey}/registros/${dniScanned}`).once('value');
-            if(!snapTicket.exists()) return notificarFlash("SIN TICKET", "error", "No registrado");
+            if(!snapTicket.exists()) {
+                notificarFlash("TICKET CADUCADO", "error", "No figura en la lista de hoy");
+                if(soundError.readyState) soundError.play();
+                return liberarCamara();
+            }
 
+            // VALIDACIÓN: ¿EL ALUMNO YA FUE ESCANEADO?
             const snapAsis = await db.ref(`sistema/asistencias/${fechaHoy}/${dniScanned}`).once('value');
-            if(snapAsis.exists()) return notificarFlash("YA ESCANEADO", "error", "Ya abordó");
+            if(snapAsis.exists()) {
+                notificarFlash("YA ESCANEADO", "warning", "Este alumno ya subió al bus");
+                if(soundError.readyState) soundError.play();
+                return liberarCamara();
+            }
 
+            // GUARDADO OFICIAL
             const nombre = snapTicket.val().nombre;
-            db.ref(`sistema/asistencias/${fechaHoy}/${dniScanned}`).set({ nombre: nombre, hora: new Date().toLocaleTimeString(), delegado: delegadoActivo });
+            await db.ref(`sistema/asistencias/${fechaHoy}/${dniScanned}`).set({ nombre: nombre, hora: new Date().toLocaleTimeString(), delegado: delegadoActivo });
 
-            soundOk.play(); notificarFlash("VERIFICADO ✅", "success", nombre);
+            soundOk.play(); 
+            notificarFlash("VERIFICADO ✅", "success", nombre);
+            liberarCamara();
         }
 
         async function generarReporteAutomatizado() {
@@ -583,11 +664,9 @@
                 if (result.isConfirmed) {
                     const fecha = getFechaID();
                     
-                    // 1. Borrar datos de Firebase
                     await db.ref(`sistema/viajes/${fecha}`).remove(); 
                     await db.ref(`sistema/asistencias/${fecha}`).remove();
                     
-                    // 2. Limpiar la interfaz visual instantáneamente para evitar confusiones
                     listaGlobalAlumnos = [];
                     document.getElementById('contenedor-lista-maestra').innerHTML = "<p class='text-center text-gray-500 py-10'>No hay tickets.</p>";
                     document.getElementById('historial-reciente').innerHTML = "<p class='text-center text-[10px] text-gray-600 py-4 italic'>Esperando escaneos...</p>";
@@ -597,8 +676,6 @@
                     document.getElementById('contador-mi').innerText = "0";
 
                     notificarFlash("SISTEMA REINICIADO", "success", "Todo en 0");
-                    
-                    // 3. Recargar la página
                     setTimeout(() => location.reload(), 1500);
                 }
             });
@@ -620,8 +697,12 @@
         function notificarFlash(titulo, tipo, sub) {
             const f = document.getElementById('flash-notif'), t = document.getElementById('flash-text'), st = document.getElementById('flash-subtext'), i = document.getElementById('flash-icon');
             t.innerText = titulo; st.innerText = sub;
-            f.className = tipo === "success" ? "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 notif-success glass" : "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 notif-error glass";
-            i.className = tipo === "success" ? "fa-solid fa-circle-check text-7xl mb-4" : "fa-solid fa-circle-xmark text-7xl mb-4";
+            f.className = `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 glass ${tipo === "success" ? "notif-success" : (tipo === "warning" ? "notif-warning" : "notif-error")}`;
+            
+            if(tipo === "success") i.className = "fa-solid fa-circle-check text-7xl mb-4";
+            else if(tipo === "warning") i.className = "fa-solid fa-triangle-exclamation text-7xl mb-4";
+            else i.className = "fa-solid fa-circle-xmark text-7xl mb-4";
+
             f.style.display = 'block'; setTimeout(() => f.style.display = 'none', 2500);
         }
     </script>
