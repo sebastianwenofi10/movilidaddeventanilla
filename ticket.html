@@ -246,7 +246,6 @@
         const Core = {
             alumno: null,
             config: {},
-            viajesData: {},
             currentMananaActive: false,
             currentTardeActive: false,
             currentNocheActive: false,
@@ -254,7 +253,7 @@
             init: function() { 
                 this.initThree('globe-box'); 
                 
-                // Obtener diferencia de tiempo real del servidor de Google para evitar hackers de reloj local
+                // Obtener diferencia de tiempo real del servidor de Google
                 db.ref('.info/serverTimeOffset').on('value', snap => {
                     serverTimeOffset = snap.val() || 0;
                     this.checkSchedules();
@@ -262,7 +261,7 @@
 
                 this.listenFirebase(); 
                 
-                // Evaluar la hora cada 30 segundos de forma continua
+                // Evaluar la hora cada 30 segundos
                 setInterval(() => this.checkSchedules(), 30000);
             },
 
@@ -271,16 +270,9 @@
             },
 
             listenFirebase: function() {
-                // Escuchar configuración (Ajustes de horas del Panel del Delegado)
+                // Escuchar configuración estricta del Panel del Delegado
                 db.ref('sistema/config').on('value', snap => {
                     this.config = snap.val() || {};
-                    this.checkSchedules();
-                });
-
-                // Escuchar cupos actuales (Para saber si el bus ya se llenó)
-                const hoy = new Date().toISOString().split('T')[0];
-                db.ref(`sistema/viajes/${hoy}`).on('value', snap => {
-                    this.viajesData = snap.val() || {};
                     this.checkSchedules();
                 });
             },
@@ -289,23 +281,18 @@
                 if (!this.config) return;
 
                 const now = this.getRealTime();
-                const currentMins = now.getHours() * 60 + now.getMinutes(); // Minutos totales del día
-
-                const maxCupos = this.config.cupos_maximos || 40;
-
-                const countTarde = (this.viajesData && this.viajesData.tarde) ? (this.viajesData.tarde.contador || 0) : 0;
-                const countNoche = (this.viajesData && this.viajesData.noche) ? (this.viajesData.noche.contador || 0) : 0;
+                const currentMins = now.getHours() * 60 + now.getMinutes();
 
                 // 1. MAÑANA: Fijo de 9:00 PM (1260 mins) a 6:59 AM (419 mins)
                 this.currentMananaActive = (currentMins >= 1260 || currentMins < 420);
                 
-                // 2. TARDE: ESTRICTAMENTE LO QUE DIGA LA BASE DE DATOS (tarde_activo)
+                // 2. TARDE: ESTRICTAMENTE SINCRONIZADO CON EL PANEL DE DELEGADOS
+                // Se eliminó la restricción que bloqueaba la tarjeta cuando el bus se llenaba.
+                // La tarjeta SIEMPRE estará abierta mientras el delegado la deje en "ACTIVO".
                 this.currentTardeActive = (this.config.tarde_activo === true);
-                if (countTarde >= maxCupos) this.currentTardeActive = false; // Bloqueo de seguridad si está lleno
 
-                // 3. NOCHE: ESTRICTAMENTE LO QUE DIGA LA BASE DE DATOS (noche_activo)
+                // 3. NOCHE: ESTRICTAMENTE SINCRONIZADO CON EL PANEL DE DELEGADOS
                 this.currentNocheActive = (this.config.noche_activo === true);
-                if (countNoche >= maxCupos) this.currentNocheActive = false; // Bloqueo de seguridad si está lleno
 
                 // TEXTOS DINÁMICOS DE LOS BADGES (MANUAL VS PROGRAMADO)
                 if(document.getElementById('time-badge-t')) {
@@ -402,14 +389,13 @@
                     sessionStorage.setItem('auth_timestamp', Date.now());
                     window.location.href = "turnotarde.html";
                 } else {
-                    Swal.fire({icon: 'error', title: 'Turno Cerrado', text: 'El turno tarde no está disponible o ya alcanzó el límite de cupos.', background: '#111', color: '#fff'});
+                    Swal.fire({icon: 'error', title: 'Turno Cerrado', text: 'El delegado ha cerrado este turno.', background: '#111', color: '#fff'});
                 }
             },
 
             requestTicket: function(turno) {
-                // VALIDACIÓN DE SEGURIDAD ESTRICTA ANTES DE EMITIR
                 if (turno === 'mañana' && !this.currentMananaActive) return Swal.fire('Acceso Denegado', 'El turno mañana solo se habilita de 9:00 PM a 7:00 AM.', 'error');
-                if (turno === 'noche' && !this.currentNocheActive) return Swal.fire('Cerrado', 'El turno noche no está disponible o el delegado lo ha cerrado.', 'error');
+                if (turno === 'noche' && !this.currentNocheActive) return Swal.fire('Cerrado', 'El delegado ha cerrado este turno.', 'error');
 
                 const fecha = this.getRealTime().toISOString().split('T')[0]; 
                 const ruta = `sistema/viajes/${fecha}/${turno}`;
@@ -418,8 +404,10 @@
                 document.getElementById('loader-msg').innerText = "GENERANDO TICKET OFICIAL...";
                 
                 db.ref(`${ruta}/registros/${this.alumno.dni}`).once('value').then(snap => {
+                    // Si el alumno ya tiene ticket, se lo mostramos directamente sin importar los cupos
                     if(snap.exists()) return this.renderTicket(turno, snap.val());
                     
+                    // Si no tiene, se procede a generar
                     db.ref(`${ruta}/contador`).transaction(c => (c || 0) + 1, (err, comm, snapC) => {
                         
                         if(err) {
