@@ -177,14 +177,14 @@
                     <div id="card-t" class="card-panorama" style="background-image: url('DSC07588-768x432.jpg');" onclick="Core.goToTarde()">
                         <span id="badge-t" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 uppercase">Evaluando...</span>
                         <h3 class="shift-title text-white">Tarde</h3>
-                        <div id="time-badge-t" class="time-badge">PROGRAMADO: 18:00</div>
+                        <div id="time-badge-t" class="time-badge">--:--</div>
                         <p class="delegate-msg text-yellow-500">Sincronizado con Panel de Delegado</p>
                     </div>
                 </div>
                 <div id="card-n" class="card-panorama w-full" style="background-image: url('DSC07629-768x432.jpg');" onclick="Core.requestTicket('noche')">
                     <span id="badge-n" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 uppercase">Evaluando...</span>
                     <h3 class="shift-title text-white text-5xl">Noche</h3>
-                    <div id="time-badge-n" class="time-badge">PROGRAMADO: 22:15</div>
+                    <div id="time-badge-n" class="time-badge">--:--</div>
                     <p class="delegate-msg text-yellow-500">Sincronizado con Panel de Delegado</p>
                 </div>
                 <!-- GLOBO 2 -->
@@ -291,33 +291,31 @@
                 const now = this.getRealTime();
                 const currentMins = now.getHours() * 60 + now.getMinutes(); // Minutos totales del día
 
-                const parseTime = (t) => {
-                    if(!t) return 9999;
-                    const p = t.split(':');
-                    return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
-                };
-
-                const tTarde = parseTime(this.config.hora_tarde || '18:00');
-                const tNoche = parseTime(this.config.hora_noche || '22:15');
                 const maxCupos = this.config.cupos_maximos || 40;
 
-                const countTarde = (this.viajesData && this.viajesData.tarde) ? this.viajesData.tarde.contador || 0 : 0;
-                const countNoche = (this.viajesData && this.viajesData.noche) ? this.viajesData.noche.contador || 0 : 0;
+                const countTarde = (this.viajesData && this.viajesData.tarde) ? (this.viajesData.tarde.contador || 0) : 0;
+                const countNoche = (this.viajesData && this.viajesData.noche) ? (this.viajesData.noche.contador || 0) : 0;
 
                 // 1. MAÑANA: Fijo de 9:00 PM (1260 mins) a 6:59 AM (419 mins)
                 this.currentMananaActive = (currentMins >= 1260 || currentMins < 420);
                 
-                // 2. TARDE: Manual Activo OR (Dentro del horario programado)
-                this.currentTardeActive = this.config.tarde_activo || (currentMins >= tTarde && currentMins < tNoche);
+                // 2. TARDE: ESTRICTAMENTE LO QUE DIGA LA BASE DE DATOS (tarde_activo)
+                this.currentTardeActive = (this.config.tarde_activo === true);
                 if (countTarde >= maxCupos) this.currentTardeActive = false; // Bloqueo de seguridad si está lleno
 
-                // 3. NOCHE: Manual Activo OR (Dentro del horario programado hasta medianoche)
-                this.currentNocheActive = this.config.noche_activo || (currentMins >= tNoche);
+                // 3. NOCHE: ESTRICTAMENTE LO QUE DIGA LA BASE DE DATOS (noche_activo)
+                this.currentNocheActive = (this.config.noche_activo === true);
                 if (countNoche >= maxCupos) this.currentNocheActive = false; // Bloqueo de seguridad si está lleno
 
-                // Actualizar Textos Dinámicos de Horas Programadas
-                if(document.getElementById('time-badge-t')) document.getElementById('time-badge-t').innerText = "PROGRAMADO: " + (this.config.hora_tarde || '18:00');
-                if(document.getElementById('time-badge-n')) document.getElementById('time-badge-n').innerText = "PROGRAMADO: " + (this.config.hora_noche || '22:15');
+                // TEXTOS DINÁMICOS DE LOS BADGES (MANUAL VS PROGRAMADO)
+                if(document.getElementById('time-badge-t')) {
+                    document.getElementById('time-badge-t').innerText = this.config.prog_tarde ? 
+                        "PROGRAMADO: " + (this.config.hora_tarde || '--:--') : "ACTIVACIÓN MANUAL";
+                }
+                if(document.getElementById('time-badge-n')) {
+                    document.getElementById('time-badge-n').innerText = this.config.prog_noche ? 
+                        "PROGRAMADO: " + (this.config.hora_noche || '--:--') : "ACTIVACIÓN MANUAL";
+                }
 
                 // Actualizar estado visual de las Tarjetas
                 this.upUI('badge-m', 'card-m', this.currentMananaActive);
@@ -411,7 +409,7 @@
             requestTicket: function(turno) {
                 // VALIDACIÓN DE SEGURIDAD ESTRICTA ANTES DE EMITIR
                 if (turno === 'mañana' && !this.currentMananaActive) return Swal.fire('Acceso Denegado', 'El turno mañana solo se habilita de 9:00 PM a 7:00 AM.', 'error');
-                if (turno === 'noche' && !this.currentNocheActive) return Swal.fire('Cerrado', 'El turno noche no está disponible o ya alcanzó el límite de cupos.', 'error');
+                if (turno === 'noche' && !this.currentNocheActive) return Swal.fire('Cerrado', 'El turno noche no está disponible o el delegado lo ha cerrado.', 'error');
 
                 const fecha = this.getRealTime().toISOString().split('T')[0]; 
                 const ruta = `sistema/viajes/${fecha}/${turno}`;
@@ -423,10 +421,21 @@
                     if(snap.exists()) return this.renderTicket(turno, snap.val());
                     
                     db.ref(`${ruta}/contador`).transaction(c => (c || 0) + 1, (err, comm, snapC) => {
+                        
+                        if(err) {
+                            document.getElementById('scanning-overlay').style.display = 'none';
+                            return Swal.fire('Error', 'Transacción denegada por seguridad de Firebase.', 'error');
+                        }
+
                         if(comm){
                             const data = { orden: snapC.val(), nombre: this.alumno.Estudiante || "Estudiante", hora: new Date().toLocaleTimeString() };
-                            db.ref(`${ruta}/registros/${this.alumno.dni}`).set(data);
-                            this.renderTicket(turno, data);
+                            db.ref(`${ruta}/registros/${this.alumno.dni}`).set(data)
+                            .then(() => {
+                                this.renderTicket(turno, data);
+                            }).catch(e => {
+                                document.getElementById('scanning-overlay').style.display = 'none';
+                                Swal.fire('Error', 'No se pudo guardar el ticket.', 'error');
+                            });
                         }
                     });
                 });
