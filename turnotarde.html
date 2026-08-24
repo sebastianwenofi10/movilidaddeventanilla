@@ -84,7 +84,7 @@
                 </div>
             </div>
             <div class="text-[9px] font-black bg-red-600/20 text-red-500 px-3 py-1.5 rounded-lg border border-red-500 uppercase animate-pulse">
-                Sesión Segura 01:00
+                Sesión Limitada (1 Minuto)
             </div>
         </header>
 
@@ -95,7 +95,7 @@
                 <div class="glass-panel p-8 shadow-2xl">
                     <div class="text-center mb-8">
                         <h3 class="text-3xl font-black uppercase italic tracking-tighter">Confirmación</h3>
-                        <p class="text-[10px] text-gray-400 tracking-[2px] uppercase mt-1 font-bold">Digite su DNI para la cola</p>
+                        <p class="text-[10px] text-gray-400 tracking-[2px] uppercase mt-1 font-bold">Digite su DNI oficial de alumno</p>
                     </div>
 
                     <div class="mb-8 relative">
@@ -130,7 +130,7 @@
                     <!-- CABECERA DEL TICKET -->
                     <div class="bg-[#050505] text-white p-6 text-center border-b-[6px] border-yellow-500 rounded-t-[40px] relative">
                         <h2 class="text-xl font-black uppercase tracking-widest font-['Montserrat']">Movilidad UNAC</h2>
-                        <p class="text-[9px] text-yellow-500 tracking-[3px] mt-1 font-bold">FIRMA DIGITAL AUTORIZADA</p>
+                        <p class="text-[9px] text-yellow-500 tracking-[3px] mt-1 font-bold">PASE DIGITAL AUTORIZADO</p>
                         <div class="absolute -bottom-3 left-[-10px] w-6 h-6 bg-[#050505] rounded-full"></div>
                         <div class="absolute -bottom-3 right-[-10px] w-6 h-6 bg-[#050505] rounded-full"></div>
                     </div>
@@ -140,9 +140,9 @@
                         <p id="t-fecha" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"></p>
                         
                         <!-- ESTADO DE ASIENTO -->
-                        <div class="bg-green-100 border-2 border-green-400 text-green-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mb-6 mx-auto w-max">
-                            <i class="fa-solid fa-chair text-2xl"></i>
-                            <span id="seat-area" class="text-4xl font-black uppercase tracking-tighter font-['Montserrat']">--</span>
+                        <div class="bg-green-100 border-2 border-green-500 text-green-700 px-6 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mb-6 mx-auto w-full max-w-[250px]">
+                            <i class="fa-solid fa-chair text-3xl"></i>
+                            <span id="seat-area" class="text-3xl font-black uppercase tracking-tighter font-['Montserrat']">ASIENTO</span>
                         </div>
 
                         <!-- CÓDIGO QR -->
@@ -153,12 +153,8 @@
                         <!-- DATOS COMPLETA -->
                         <div class="bg-gray-50 border border-gray-200 rounded-[25px] p-5 mb-5 text-left shadow-inner">
                             <div class="border-b border-gray-200 pb-2 mb-2">
-                                <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Pasajero Autorizado</p>
+                                <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Estudiante Autorizado</p>
                                 <p id="t-nom" class="text-xs font-black text-gray-900 uppercase leading-tight mt-1"></p>
-                            </div>
-                            <div class="border-b border-gray-200 pb-2 mb-2">
-                                <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Facultad</p>
-                                <p id="t-fac" class="text-[10px] font-bold text-gray-700 uppercase mt-1"></p>
                             </div>
                             <div class="grid grid-cols-2 gap-4 border-b border-gray-200 pb-2 mb-2">
                                 <div>
@@ -182,20 +178,20 @@
                             </div>
                         </div>
 
-                        <!-- INSTRUCCIÓN -->
-                        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-xl text-left">
+                        <!-- INSTRUCCIÓN OBLIGATORIA DETALLADA -->
+                        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-xl text-left shadow-sm">
                             <div class="flex gap-3 items-start">
-                                <i class="fa-solid fa-triangle-exclamation text-yellow-600 mt-0.5"></i>
-                                <p class="text-[9px] font-bold text-gray-700 leading-tight">
-                                    <span class="text-black font-black uppercase block mb-1 tracking-widest text-[8px]">Obligatorio</span>
-                                    Para validar su acceso, debe formar su cola y presentar este código QR al delegado antes de abordar.
+                                <i class="fa-solid fa-triangle-exclamation text-yellow-600 mt-0.5 text-lg"></i>
+                                <p class="text-[9px] font-medium text-gray-800 leading-relaxed text-justify">
+                                    <span class="text-black font-black uppercase block mb-1 tracking-widest text-[10px]">Validación Obligatoria</span>
+                                    Este pase digital es personal e intransferible. Para hacer efectivo su viaje, es estrictamente obligatorio formar la cola y <strong class="text-black">presentar este código QR para ser escaneado por el delegado</strong> en la puerta del bus. Sin esta verificación, perderá su acceso.
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <button onclick="window.location.href='ticket.html'" class="mt-8 bg-white/5 border border-white/10 text-white font-black px-10 py-4 rounded-xl uppercase tracking-widest text-[10px] hover:bg-yellow-500 hover:text-black transition shadow-lg">Cerrar Sesión Segura</button>
+                <button onclick="window.location.href='ticket.html'" class="mt-8 bg-white/5 border border-white/10 text-white font-black px-10 py-4 rounded-xl uppercase tracking-widest text-[10px] hover:bg-yellow-500 hover:text-black transition shadow-lg">Finalizar y Salir</button>
             </div>
 
             <!-- GLOBO 3D -->
@@ -228,8 +224,8 @@
 
                 this.initThree(); 
                 
-                // EVALUADOR EN TIEMPO REAL: Revisa solo si el delegado cerró manualmente o expiró la sesión
-                setInterval(() => this.checkSecurity(), 3000);
+                // EVALUADOR EN TIEMPO REAL: Verifica caducidad de 1 minuto constantemente
+                setInterval(() => this.checkSecurity(), 1000);
             },
 
             getRealTime: function() {
@@ -243,27 +239,25 @@
                 const icon = document.getElementById('block-icon');
                 const reason = document.getElementById('block-reason');
                 
-                // Si el alumno YA sacó su ticket exitosamente, no lo bloqueamos
-                if (!document.getElementById('step-3').classList.contains('hidden-section')) return;
-
                 if (tipo === 'lleno') {
-                    overlay.style.border = '15px solid #f59e0b'; // Borde Naranja
+                    overlay.style.border = '15px solid #f59e0b'; 
                     icon.className = 'fa-solid fa-bus text-7xl text-yellow-500 mb-6 animate-bounce';
                     title.innerText = "CAPACIDAD MÁXIMA";
                     title.className = "text-3xl font-black text-yellow-500 uppercase tracking-tighter";
-                    reason.innerHTML = `Estimado estudiante, los <b>${cuposMax} cupos</b> habilitados por el panel de delegados para este turno han sido completados en su totalidad.<br><br><span style="color:#ffc107;">El sistema no emitirá más tickets.</span>`;
+                    reason.innerHTML = `Estimado estudiante, los <b>${cuposMax} cupos</b> habilitados por el panel de delegados para este turno han sido completados en su totalidad.<br><br><span style="color:#ffc107;">El sistema no emitirá más tickets por el momento.</span>`;
                 } else if (tipo === 'cerrado') {
-                    overlay.style.border = '15px solid #ef4444'; // Borde Rojo
+                    overlay.style.border = '15px solid #ef4444'; 
                     icon.className = 'fa-solid fa-shield-halved text-7xl text-red-600 mb-6 animate-bounce';
                     title.innerText = "TURNO CERRADO";
                     title.className = "text-3xl font-black text-white uppercase tracking-tighter";
                     reason.innerText = "El delegado a cargo ha desactivado la emisión de tickets para este turno.";
                 } else {
-                    overlay.style.border = '15px solid #ef4444'; // Tiempo caducado
-                    icon.className = 'fa-solid fa-clock text-7xl text-red-600 mb-6 animate-bounce';
-                    title.innerText = "SESIÓN CADUCADA";
+                    // Mensaje de Caducidad (Sesión Expirada)
+                    overlay.style.border = '15px solid #ef4444'; 
+                    icon.className = 'fa-solid fa-clock text-7xl text-red-600 mb-6 animate-pulse';
+                    title.innerText = "SESIÓN EXPIRADA";
                     title.className = "text-3xl font-black text-white uppercase tracking-tighter";
-                    reason.innerText = "El tiempo de seguridad de 1 minuto para firmar el ticket ha expirado. Por favor, vuelva a ingresar desde el portal.";
+                    reason.innerText = "Por motivos de seguridad, el tiempo de visualización límite (1 Minuto) ha concluido. Por favor, vuelva a ingresar desde el portal principal si lo requiere.";
                 }
 
                 document.getElementById('scanning-overlay').style.display = 'none';
@@ -275,18 +269,19 @@
                 const authTime = sessionStorage.getItem('auth_timestamp');
                 const currentTime = Date.now();
 
-                // LÓGICA DE 1 MINUTO DE CADUCIDAD
+                // LÓGICA ESTRICTA DE 1 MINUTO (Aplica tanto para el teclado como para el ticket)
                 if (isValid !== 'true' || !authTime || (currentTime - authTime > 60000)) {
                     sessionStorage.clear();
                     this.showBlockScreen('caducado');
                     return;
                 }
 
-                // SI EL USUARIO YA TIENE EL TICKET EN PANTALLA, NO INTERFERIMOS
+                // Si ya está viendo el ticket, NO evaluamos el cierre del turno del delegado,
+                // solo permitimos que siga corriendo el temporizador de 1 minuto de arriba.
                 if (!document.getElementById('step-3').classList.contains('hidden-section')) return; 
 
                 try {
-                    // Consultamos Configuración SOLO para ver si el delegado lo desactivó
+                    // Consultamos Configuración para ver si el delegado cerró el turno
                     const snapConfig = await db.ref('sistema/config').once('value');
                     const config = snapConfig.val() || {};
 
@@ -295,10 +290,6 @@
                         this.showBlockScreen('cerrado');
                         return;
                     }
-                    
-                    // NOTA IMPORTANTE: Ya NO evaluamos "Cupos Llenos" aquí.
-                    // Eso permite que el alumno siempre pueda poner su DNI.
-
                 } catch(e) {
                     console.log("Sincronizando estado...");
                 }
@@ -321,7 +312,6 @@
                 try {
                     const fechaID = this.getRealTime().toISOString().split('T')[0];
 
-                    // 1. VALIDACIÓN: ¿Existe el alumno?
                     msg.innerText = "VERIFICANDO PADRÓN OFICIAL...";
                     const aluSnap = await db.ref('alumnos/' + typedDni).once('value');
                     if(!aluSnap.exists()) {
@@ -330,7 +320,6 @@
                     }
                     const alu = aluSnap.val();
 
-                    // 2. VALIDACIÓN: ¿Ya abordó el bus hoy?
                     msg.innerText = "REVISANDO REGISTROS DE ABORDAJE...";
                     const asisSnap = await db.ref(`sistema/asistencias/${fechaID}/${typedDni}`).once('value');
                     if (asisSnap.exists()) {
@@ -340,7 +329,6 @@
                         return;
                     }
 
-                    // 3. OBTENER ESTADO EXACTO AL MOMENTO DE DAR CLIC
                     msg.innerText = "CALCULANDO CUPOS EN TIEMPO REAL...";
                     const cfgSnap = await db.ref('sistema/config').once('value');
                     const config = cfgSnap.val() || {};
@@ -354,27 +342,24 @@
 
                     const refViajeTarde = db.ref(`sistema/viajes/${fechaID}/tarde`);
                     
-                    // PASO CLAVE 1: ¿YA TIENE TICKET CREADO?
-                    // Si ya tiene ticket, se lo mostramos DIRECTAMENTE y terminamos el proceso aquí.
+                    // ¿EL ALUMNO YA TIENE TICKET? -> Se lo mostramos directamente.
                     const snapReg = await refViajeTarde.child(`registros/${typedDni}`).once('value');
                     if(snapReg.exists()){
                         this.renderFinal(alu, typedDni, snapReg.val());
                         return;
                     }
 
-                    // PASO CLAVE 2: SI LLEGA HASTA AQUÍ, ES PORQUE NO TIENE TICKET.
-                    // Ahora sí verificamos si el bus ya se llenó.
+                    // SI NO TIENE TICKET -> Verificamos que queden cupos.
                     const countSnap = await refViajeTarde.child('contador').once('value');
                     const countActual = countSnap.val() || 0;
 
                     if (countActual >= cuposMaximos) {
                         overlay.style.display = 'none';
-                        // Mostrar pantalla de bloqueo formal de CUPOS LLENOS
                         this.showBlockScreen('lleno', cuposMaximos);
                         return;
                     }
 
-                    // 4. GENERACIÓN DEL TICKET (Transaction Segura)
+                    // GENERACIÓN DEL NUEVO TICKET
                     msg.innerText = "ASIGNANDO ASIENTO Y GENERANDO CÓDIGO...";
                     refViajeTarde.child('contador').transaction(c => (c || 0) + 1, (err, comm, snapCont) => {
                         
@@ -384,9 +369,7 @@
                         }
 
                         if(comm){
-                            // Una vez hecha la transacción, verificamos si por milisegundos se pasó del límite
                             if (snapCont.val() > cuposMaximos) {
-                                // Revertir la transacción si hubo un choque de usuarios
                                 refViajeTarde.child('contador').set(cuposMaximos); 
                                 overlay.style.display = 'none';
                                 this.showBlockScreen('lleno', cuposMaximos);
@@ -399,14 +382,13 @@
                                 hora: this.getRealTime().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
                             };
                             
-                            // Guardar datos
                             refViajeTarde.child(`registros/${typedDni}`).set(data)
                             .then(() => {
                                 this.renderFinal(alu, typedDni, data);
                             })
                             .catch(errorEscritura => {
                                 overlay.style.display = 'none';
-                                Swal.fire('Error', 'No se pudo guardar su ticket por las reglas del sistema.', 'error');
+                                Swal.fire('Error', 'No se pudo guardar su ticket.', 'error');
                             });
                         } else {
                             overlay.style.display = 'none';
@@ -416,22 +398,24 @@
 
                 } catch (e) {
                     overlay.style.display = 'none';
-                    Swal.fire('Error de Red', 'Problemas de conexión con el servidor. Reintenta.', 'error');
+                    Swal.fire('Error de Red', 'Problemas de conexión con el servidor.', 'error');
                 }
             },
 
             renderFinal: function(alu, dni, ticket) {
+                // Al mostrar el ticket, RESETEAMOS el cronómetro a exactamente 1 minuto desde este momento.
+                sessionStorage.setItem('auth_timestamp', Date.now());
+
                 const fechaFormat = this.getRealTime().toLocaleDateString('es-PE', { weekday:'long', year:'numeric', month:'long', day:'numeric' }).toUpperCase();
                 
                 document.getElementById('t-fecha').innerText = fechaFormat;
                 document.getElementById('t-nom').innerText = alu.Estudiante || "Estudiante UNAC";
-                document.getElementById('t-fac').innerText = alu.Facultad || "NO REGISTRADA";
                 document.getElementById('t-dni').innerText = dni;
                 document.getElementById('t-cod').innerText = alu.Codigo || alu.codigo || "S/C";
                 document.getElementById('t-hora').innerText = ticket.hora;
                 
-                // Formato con dos dígitos para el asiento (Ej: 01, 09, 15)
-                document.getElementById('seat-area').innerText = ticket.orden.toString().padStart(2, '0');
+                // EL TICKET YA NO MUESTRA NÚMERO, SIEMPRE MOSTRARÁ LA PALABRA "ASIENTO"
+                document.getElementById('seat-area').innerText = "ASIENTO";
 
                 // GENERACIÓN DE QR PARA DELEGADO
                 document.getElementById('qrcode-vip').innerHTML = "";
