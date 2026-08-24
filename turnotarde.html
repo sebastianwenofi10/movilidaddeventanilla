@@ -30,7 +30,7 @@
             background-size: cover; background-position: center; background-attachment: fixed; min-height: 100vh; width: 100%; display: flex; flex-direction: column; 
         }
 
-        /* HUD DE CARGA AVANZADO (IDÉNTICO A LA PÁGINA PRINCIPAL) */
+        /* HUD DE CARGA AVANZADO */
         #scanning-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; backdrop-filter: blur(25px); }
         .hud-box { width: 320px; height: 320px; border: 2px solid rgba(255, 193, 7, 0.2); position: relative; border-radius: 40px; background: rgba(255,255,255,0.02); overflow: hidden; }
         .hud-line { position: absolute; width: 100%; height: 4px; background: var(--accent); top: 0; animation: scanLine 2.5s linear infinite; box-shadow: 0 0 30px var(--accent); }
@@ -120,7 +120,7 @@
                 </div>
             </div>
 
-            <!-- PASO 2 : TICKET GENERADO (DISEÑO PROFESIONAL) -->
+            <!-- PASO 2 : TICKET GENERADO -->
             <div id="step-3" class="hidden-section w-full animate-fade-up text-center">
                 
                 <div class="relative bg-white pb-6 rounded-[40px] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/10 max-w-sm mx-auto">
@@ -138,7 +138,7 @@
                         <!-- FECHA -->
                         <p id="t-fecha" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"></p>
                         
-                        <!-- ESTADO DE ASIENTO (Dinámico Verde o Naranja, SIN NÚMERO) -->
+                        <!-- ESTADO DE ASIENTO -->
                         <div id="seat-badge" class="bg-green-100 border-2 border-green-400 text-green-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mb-6 mx-auto w-max">
                             <i id="seat-icon" class="fa-solid fa-chair text-2xl"></i>
                             <span id="seat-area" class="text-3xl font-black uppercase tracking-tighter font-['Montserrat']">--</span>
@@ -220,7 +220,6 @@
 
         const Core = {
             init: function() { 
-                // Sincronizar tiempo con el servidor para evitar hacks locales
                 db.ref('.info/serverTimeOffset').on('value', snap => {
                     serverTimeOffset = snap.val() || 0;
                     this.checkSecurity(); 
@@ -253,28 +252,13 @@
                 if (!document.getElementById('step-3').classList.contains('hidden-section')) return; 
 
                 try {
-                    // Verificar configuración en tiempo real
                     const snapConfig = await db.ref('sistema/config').once('value');
                     const config = snapConfig.val() || {};
 
-                    const now = this.getRealTime();
-                    const currentMins = now.getHours() * 60 + now.getMinutes();
-
-                    const parseTime = (t) => {
-                        if(!t) return 9999;
-                        const p = t.split(':');
-                        return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
-                    };
-
-                    const tTarde = parseTime(config.hora_tarde || '18:00');
-                    const tNoche = parseTime(config.hora_noche || '22:15');
-
-                    // Validar si está activo por hora o manual
-                    const isTardeActive = config.tarde_activo || (currentMins >= tTarde && currentMins < tNoche);
-
-                    if(!isTardeActive) {
+                    // REGLA ESTRICTA: El turno debe estar activo en la Base de datos para coincidir con tus reglas de Firebase.
+                    if(config.tarde_activo !== true) {
                         overlay.style.display = 'flex';
-                        blockReason.innerText = "El sistema se ha cerrado o ya no es horario de emisión.";
+                        blockReason.innerText = "El delegado ha cerrado el turno en el servidor.";
                     }
                 } catch(e) {
                     console.log("Esperando conexión...");
@@ -294,10 +278,8 @@
                 const overlay = document.getElementById('scanning-overlay');
                 const msg = document.getElementById('loader-msg');
                 overlay.style.display = 'flex';
-                msg.innerText = "CONECTANDO CON EL PANEL DEL DELEGADO...";
                 
                 try {
-                    db.goOnline();
                     const fechaID = this.getRealTime().toISOString().split('T')[0];
 
                     // 1. VALIDACIÓN: ¿Existe el alumno?
@@ -309,7 +291,7 @@
                     }
                     const alu = aluSnap.val();
 
-                    // 2. VALIDACIÓN ESTRICTA: ¿El delegado ya escaneó este DNI hoy?
+                    // 2. VALIDACIÓN: ¿El delegado ya escaneó este DNI hoy?
                     msg.innerText = "REVISANDO REGISTROS DE ABORDAJE...";
                     const asisSnap = await db.ref(`sistema/asistencias/${fechaID}/${typedDni}`).once('value');
                     if (asisSnap.exists()) {
@@ -322,7 +304,14 @@
                     // 3. VALIDACIÓN DE CONFIGURACIÓN Y CUPOS
                     msg.innerText = "CALCULANDO CUPOS EN TIEMPO REAL...";
                     const cfgSnap = await db.ref('sistema/config').once('value');
-                    const cuposMaximos = cfgSnap.val().cupos_maximos || 40;
+                    const config = cfgSnap.val() || {};
+                    const cuposMaximos = config.cupos_maximos || 40;
+
+                    // IMPORTANTE: Respetar tus propias reglas de Firebase
+                    if (config.tarde_activo !== true) {
+                        overlay.style.display = 'none';
+                        return Swal.fire('Acceso Denegado', 'El delegado aún no ha activado el turno en la base de datos (Bloqueo por reglas).', 'error');
+                    }
 
                     const refViajeTarde = db.ref(`sistema/viajes/${fechaID}/tarde`);
                     const countSnap = await refViajeTarde.child('contador').once('value');
@@ -336,24 +325,43 @@
                     }
 
                     // Si NO tiene ticket, verificamos si el bus ya está lleno antes de crearlo
+                    // (ESTO ARREGLA EL TEMA DE BLOQUEO POR CUPOS LLENOS)
                     if (countActual >= cuposMaximos) {
                         overlay.style.display = 'none';
                         document.getElementById('blocking-overlay').style.display = 'flex';
-                        document.getElementById('block-reason').innerText = "Lo sentimos, el bus ha alcanzado su capacidad máxima establecida por el delegado.";
+                        document.getElementById('block-reason').innerText = `Bus lleno. Se ha alcanzado la capacidad máxima de ${cuposMaximos} pasajeros.`;
                         return;
                     }
 
-                    // 4. GENERACIÓN DEL TICKET OFICIAL (TRANSACTION)
+                    // 4. GENERACIÓN DEL TICKET OFICIAL (TRANSACTION MEJORADA)
                     msg.innerText = "ASIGNANDO ASIENTO Y GENERANDO CÓDIGO...";
                     refViajeTarde.child('contador').transaction(c => (c || 0) + 1, (err, comm, snapCont) => {
+                        
+                        // Si ocurre un error (Por ejemplo las reglas de Firebase rechazan)
+                        if(err) {
+                            overlay.style.display = 'none';
+                            return Swal.fire('Error', 'Transacción denegada por seguridad de Firebase. Comunique al delegado.', 'error');
+                        }
+
                         if(comm){
                             const data = { 
                                 nombre: alu.Estudiante || "Estudiante", 
                                 orden: snapCont.val(),
                                 hora: this.getRealTime().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
                             };
-                            refViajeTarde.child(`registros/${typedDni}`).set(data);
-                            this.renderFinal(alu, typedDni, data);
+                            
+                            // Hacemos el Set y evaluamos que termine exitoso
+                            refViajeTarde.child(`registros/${typedDni}`).set(data)
+                            .then(() => {
+                                this.renderFinal(alu, typedDni, data);
+                            })
+                            .catch(errorEscritura => {
+                                overlay.style.display = 'none';
+                                Swal.fire('Error', 'No se pudo guardar su ticket por las reglas del sistema.', 'error');
+                            });
+                        } else {
+                            overlay.style.display = 'none';
+                            Swal.fire('Advertencia', 'No se pudo reservar el cupo, intenta de nuevo.', 'warning');
                         }
                     });
 
@@ -378,13 +386,13 @@
                 const area = document.getElementById('seat-area');
                 const icon = document.getElementById('seat-icon');
 
-                // Lógica Visual del Asiento (Verde o Naranja) SIN NÚMERO
+                // Lógica Visual del Asiento
                 db.ref('sistema/config/cupos_maximos').once('value').then(snap => {
                     const cupos = snap.val() || 40;
                     if (ticket.orden <= cupos) {
                         badgeContainer.className = "bg-green-100 border-2 border-green-400 text-green-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mx-auto w-max";
                         icon.className = "fa-solid fa-chair text-2xl";
-                        area.innerText = "ASIENTO"; // <--- Aquí modificado para que NO salga el número
+                        area.innerText = "ASIENTO"; 
                     } else {
                         badgeContainer.className = "bg-orange-100 border-2 border-orange-400 text-orange-700 px-6 py-3 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-orange-500/20 mx-auto w-max";
                         icon.className = "fa-solid fa-person-walking text-2xl";
@@ -410,9 +418,6 @@
                     document.getElementById('step-1').classList.add('hidden-section');
                     document.getElementById('step-3').classList.remove('hidden-section');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
-                    
-                    // Desconectar para no saturar Firebase
-                    db.goOffline();
                 }, 1000);
             },
 
