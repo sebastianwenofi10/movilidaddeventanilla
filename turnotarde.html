@@ -83,8 +83,8 @@
                     <span class="text-[9px] text-yellow-500 font-bold">Ruta Ventanilla</span>
                 </div>
             </div>
-            <div class="text-[9px] font-black bg-red-600/20 text-red-500 px-3 py-1.5 rounded-lg border border-red-500 uppercase animate-pulse">
-                Sesión Limitada (1 Minuto)
+            <div class="text-[9px] font-black bg-red-600/20 text-red-500 px-3 py-1.5 rounded-lg border border-red-500 uppercase flex items-center gap-2">
+                <i class="fa-solid fa-circle text-[6px] animate-ping"></i> LÍMITE: 1 MIN
             </div>
         </header>
 
@@ -215,36 +215,39 @@
         let typedDni = "";
         let serverTimeOffset = 0;
         
-        // --- ADICIÓN --- : Variable global para estado sincronizado en tiempo real
+        // Variables globales para la sincronización perfecta
+        let turnoDataLoaded = false;
         window.estadoTurno = { activo: false, cupos: 40 };
 
         const Core = {
             init: function() { 
+                // 1. Sincroniza la hora con Google Firebase
                 db.ref('.info/serverTimeOffset').on('value', snap => {
                     serverTimeOffset = snap.val() || 0;
-                    this.checkSecurity(); 
                 });
 
-                // --- ADICIÓN --- : Listener en tiempo real para 0 latencia con el Panel
+                // 2. LISTENER EN TIEMPO REAL: Se conecta permanentemente al panel del Delegado
                 db.ref('sistema/config').on('value', snap => {
                     const data = snap.val() || {};
                     window.estadoTurno = {
                         activo: data.tarde_activo === true,
                         cupos: data.cupos_maximos || 40
                     };
+                    turnoDataLoaded = true; // Confirma que ya leyó la base de datos real
+                    this.reaccionarAlDelegado(); // Función reactiva
                 });
 
                 this.initThree(); 
                 
-                // EVALUADOR EN TIEMPO REAL: Verifica caducidad de 1 minuto constantemente
-                setInterval(() => this.checkSecurity(), 1000);
+                // 3. Evalúa SÓLO el tiempo de 1 minuto constantemente
+                setInterval(() => this.checkSecurityTime(), 1000);
             },
 
             getRealTime: function() {
                 return new Date(Date.now() + serverTimeOffset);
             },
 
-            // FUNCIÓN PARA MOSTRAR PANTALLA DE BLOQUEO PROFESIONAL
+            // FUNCIÓN PARA MOSTRAR PANTALLA DE BLOQUEO
             showBlockScreen: function(tipo, cuposMax = 0) {
                 const overlay = document.getElementById('blocking-overlay');
                 const title = document.getElementById('block-title');
@@ -264,7 +267,6 @@
                     title.className = "text-3xl font-black text-white uppercase tracking-tighter";
                     reason.innerText = "El delegado a cargo ha desactivado la emisión de tickets para este turno.";
                 } else {
-                    // Mensaje de Caducidad (Sesión Expirada)
                     overlay.style.border = '15px solid #ef4444'; 
                     icon.className = 'fa-solid fa-clock text-7xl text-red-600 mb-6 animate-pulse';
                     title.innerText = "SESIÓN EXPIRADA";
@@ -276,26 +278,37 @@
                 overlay.style.display = 'flex';
             },
 
-            checkSecurity: async function() {
+            // Función Reactiva: Acciona INMEDIATAMENTE cuando el delegado toca su botón
+            reaccionarAlDelegado: function() {
+                if (!turnoDataLoaded) return; // Espera a que Firebase cargue la primera vez
+                
+                // Si el estudiante ya tiene su TICKET a la vista, NO LO BLOQUEAMOS por turno cerrado.
+                if (!document.getElementById('step-3').classList.contains('hidden-section')) return;
+
+                const overlay = document.getElementById('blocking-overlay');
+                const title = document.getElementById('block-title');
+
+                if (window.estadoTurno.activo === false) {
+                    // El delegado cerró el panel -> Se bloquea la pantalla instantáneamente
+                    this.showBlockScreen('cerrado');
+                } else {
+                    // EL DELEGADO ABRIÓ EL PANEL -> Si estaba bloqueado por "cerrado", SE DESBLOQUEA SOLO.
+                    if (overlay.style.display === 'flex' && title.innerText === "TURNO CERRADO") {
+                        overlay.style.display = 'none';
+                    }
+                }
+            },
+
+            // Evalúa ÚNICAMENTE la sesión de 1 minuto
+            checkSecurityTime: function() {
                 const isValid = sessionStorage.getItem('valid_session');
                 const authTime = sessionStorage.getItem('auth_timestamp');
                 const currentTime = Date.now();
 
-                // LÓGICA ESTRICTA DE 1 MINUTO (Aplica tanto para el teclado como para el ticket)
+                // Si pasaron 60,000 ms (1 Minuto), se rompe la sesión
                 if (isValid !== 'true' || !authTime || (currentTime - authTime > 60000)) {
-                    sessionStorage.clear();
+                    sessionStorage.removeItem('valid_session'); 
                     this.showBlockScreen('caducado');
-                    return;
-                }
-
-                // Si ya está viendo el ticket, NO evaluamos el cierre del turno del delegado,
-                // solo permitimos que siga corriendo el temporizador de 1 minuto de arriba.
-                if (!document.getElementById('step-3').classList.contains('hidden-section')) return; 
-
-                // --- ADICIÓN --- : Verificamos el estado en tiempo real sin latencia
-                if (window.estadoTurno && window.estadoTurno.activo !== true) {
-                    this.showBlockScreen('cerrado');
-                    return;
                 }
             },
 
@@ -308,6 +321,7 @@
 
             submitDni: async function() {
                 if(typedDni.length !== 8) return Swal.fire('Error', 'Ingrese su DNI completo de 8 dígitos', 'warning');
+                if(!turnoDataLoaded) return Swal.fire('Conectando...', 'Espere un segundo mientras nos sincronizamos con el panel.', 'info');
                 
                 const overlay = document.getElementById('scanning-overlay');
                 const msg = document.getElementById('loader-msg');
@@ -333,34 +347,33 @@
                         return;
                     }
 
-                    // --- ADICIÓN --- : BUSCAR TICKET PREVIO PRIMERO PARA RECUPERACIÓN
                     msg.innerText = "BUSCANDO TICKET PREVIO...";
                     const refViajeTarde = db.ref(`sistema/viajes/${fechaID}/tarde`);
                     const snapReg = await refViajeTarde.child(`registros/${typedDni}`).once('value');
                     
+                    // REPARACIÓN: Si ya tiene ticket, ENTRA DIRECTO (así esté cerrado o lleno)
                     if(snapReg.exists()){
-                        // Si ya tiene ticket, entra directo y recupera (ignorando cierres o cupos llenos).
                         msg.innerText = "RECUPERANDO TICKET...";
                         this.renderFinal(alu, typedDni, snapReg.val());
                         return;
                     }
 
-                    // --- ADICIÓN --- : VERIFICACIÓN EN TIEMPO REAL DEL TURNO CERRADO
-                    msg.innerText = "CALCULANDO CUPOS EN TIEMPO REAL...";
-                    const cuposMaximos = window.estadoTurno ? window.estadoTurno.cupos : 40;
+                    // AHORA SÍ EVALUAMOS ESTADO PARA LOS NUEVOS
+                    const cuposMaximos = window.estadoTurno.cupos;
 
-                    if (window.estadoTurno && window.estadoTurno.activo !== true) {
+                    if (window.estadoTurno.activo === false) {
                         overlay.style.display = 'none';
                         this.showBlockScreen('cerrado');
                         return;
                     }
 
-                    // --- ADICIÓN --- : TRANSACCIÓN PARA MÚLTIPLES ALUMNOS A LA VEZ (SOPORTE 70+)
-                    msg.innerText = "ASIGNANDO ASIENTO Y GENERANDO CÓDIGO...";
+                    msg.innerText = "ASIGNANDO ASIENTO EN SERVIDOR...";
+                    
+                    // TRANSACCIÓN ATÓMICA: Soporte para 70+ alumnos peleando por un cupo al mismo milisegundo
                     refViajeTarde.child('contador').transaction(
                         (currentCount) => {
-                            if ((currentCount || 0) >= cuposMaximos) return; // Se cancela si ya está lleno
-                            return (currentCount || 0) + 1; // Suma de forma segura
+                            if ((currentCount || 0) >= cuposMaximos) return; // Cancela si se llenó
+                            return (currentCount || 0) + 1; // Reserva el número
                         }, 
                         (error, committed, snapshot) => {
                             if (error) {
@@ -386,7 +399,7 @@
                             })
                             .catch(errorEscritura => {
                                 overlay.style.display = 'none';
-                                Swal.fire('Error', 'No se pudo guardar su ticket.', 'error');
+                                Swal.fire('Error', 'Se reservó tu cupo pero el internet falló al guardar tus datos.', 'error');
                             });
                         }
                     );
@@ -398,7 +411,7 @@
             },
 
             renderFinal: function(alu, dni, ticket) {
-                // --- ADICIÓN --- : REINICIO DEL CRONÓMETRO AL RECUPERAR O CREAR TICKET
+                // RESETEA EL CRONÓMETRO: Inicia exactamente 1 minuto desde que ve el ticket
                 sessionStorage.setItem('auth_timestamp', Date.now());
 
                 const fechaFormat = this.getRealTime().toLocaleDateString('es-PE', { weekday:'long', year:'numeric', month:'long', day:'numeric' }).toUpperCase();
@@ -409,7 +422,6 @@
                 document.getElementById('t-cod').innerText = alu.Codigo || alu.codigo || "S/C";
                 document.getElementById('t-hora').innerText = ticket.hora;
                 
-                // EL TICKET YA NO MUESTRA NÚMERO, SIEMPRE MOSTRARÁ LA PALABRA "ASIENTO"
                 document.getElementById('seat-area').innerText = "ASIENTO";
 
                 // GENERACIÓN DE QR PARA DELEGADO
