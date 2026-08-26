@@ -184,7 +184,7 @@
                                 <i class="fa-solid fa-triangle-exclamation text-yellow-600 mt-0.5 text-lg"></i>
                                 <p class="text-[9px] font-medium text-gray-800 leading-relaxed text-justify">
                                     <span class="text-black font-black uppercase block mb-1 tracking-widest text-[10px]">Validación Obligatoria</span>
-                                    Este pase digital es personal e intransferible. Para hacer efectivo su viaje, es estrictamente obligatorio formar la cola y <strong class="text-black">presentar este código QR para ser escaneado por el delegado</strong> en la puerta del bus. Sin esta verificación, perderá su acceso.
+                                    Este pase digital es personal e intransferible. Para hacer efectivo su viaje, es estrictamente obligatorio presentar este código QR para ser escaneado por el delegado.
                                 </p>
                             </div>
                         </div>
@@ -223,8 +223,6 @@
                 });
 
                 this.initThree(); 
-                
-                // EVALUADOR EN TIEMPO REAL: Verifica caducidad de 1 minuto constantemente
                 setInterval(() => this.checkSecurity(), 1000);
             },
 
@@ -232,7 +230,6 @@
                 return new Date(Date.now() + serverTimeOffset);
             },
 
-            // FUNCIÓN PARA MOSTRAR PANTALLA DE BLOQUEO PROFESIONAL
             showBlockScreen: function(tipo, cuposMax = 0) {
                 const overlay = document.getElementById('blocking-overlay');
                 const title = document.getElementById('block-title');
@@ -244,7 +241,7 @@
                     icon.className = 'fa-solid fa-bus text-7xl text-yellow-500 mb-6 animate-bounce';
                     title.innerText = "CAPACIDAD MÁXIMA";
                     title.className = "text-3xl font-black text-yellow-500 uppercase tracking-tighter";
-                    reason.innerHTML = `Estimado estudiante, los <b>${cuposMax} cupos</b> habilitados por el panel de delegados para este turno han sido completados en su totalidad.<br><br><span style="color:#ffc107;">El sistema no emitirá más tickets por el momento.</span>`;
+                    reason.innerHTML = `Estimado estudiante, los <b>${cuposMax} cupos</b> habilitados para este turno han sido completados en su totalidad.<br><br><span style="color:#ffc107;">El sistema no emitirá más tickets por hoy.</span>`;
                 } else if (tipo === 'cerrado') {
                     overlay.style.border = '15px solid #ef4444'; 
                     icon.className = 'fa-solid fa-shield-halved text-7xl text-red-600 mb-6 animate-bounce';
@@ -252,12 +249,11 @@
                     title.className = "text-3xl font-black text-white uppercase tracking-tighter";
                     reason.innerText = "El delegado a cargo ha desactivado la emisión de tickets para este turno.";
                 } else {
-                    // Mensaje de Caducidad (Sesión Expirada)
                     overlay.style.border = '15px solid #ef4444'; 
                     icon.className = 'fa-solid fa-clock text-7xl text-red-600 mb-6 animate-pulse';
                     title.innerText = "SESIÓN EXPIRADA";
                     title.className = "text-3xl font-black text-white uppercase tracking-tighter";
-                    reason.innerText = "Por motivos de seguridad, el tiempo de visualización límite (1 Minuto) ha concluido. Por favor, vuelva a ingresar desde el portal principal si lo requiere.";
+                    reason.innerText = "Por motivos de seguridad, el tiempo de visualización límite (1 Minuto) ha concluido. Si ya tenías tu ticket, puedes volver a ingresar tu DNI para verlo.";
                 }
 
                 document.getElementById('scanning-overlay').style.display = 'none';
@@ -269,29 +265,11 @@
                 const authTime = sessionStorage.getItem('auth_timestamp');
                 const currentTime = Date.now();
 
-                // LÓGICA ESTRICTA DE 1 MINUTO (Aplica tanto para el teclado como para el ticket)
+                // LÓGICA ESTRICTA DE 1 MINUTO
                 if (isValid !== 'true' || !authTime || (currentTime - authTime > 60000)) {
                     sessionStorage.clear();
                     this.showBlockScreen('caducado');
                     return;
-                }
-
-                // Si ya está viendo el ticket, NO evaluamos el cierre del turno del delegado,
-                // solo permitimos que siga corriendo el temporizador de 1 minuto de arriba.
-                if (!document.getElementById('step-3').classList.contains('hidden-section')) return; 
-
-                try {
-                    // Consultamos Configuración para ver si el delegado cerró el turno
-                    const snapConfig = await db.ref('sistema/config').once('value');
-                    const config = snapConfig.val() || {};
-
-                    // REVISAR SI EL DELEGADO CERRÓ EL TURNO MANUALMENTE
-                    if(config.tarde_activo !== true) {
-                        this.showBlockScreen('cerrado');
-                        return;
-                    }
-                } catch(e) {
-                    console.log("Sincronizando estado...");
                 }
             },
 
@@ -312,6 +290,7 @@
                 try {
                     const fechaID = this.getRealTime().toISOString().split('T')[0];
 
+                    // 1. VALIDAR SI EXISTE EN PADRÓN
                     msg.innerText = "VERIFICANDO PADRÓN OFICIAL...";
                     const aluSnap = await db.ref('alumnos/' + typedDni).once('value');
                     if(!aluSnap.exists()) {
@@ -320,16 +299,34 @@
                     }
                     const alu = aluSnap.val();
 
+                    // 2. VERIFICAR SI YA ABORDÓ EL BUS
                     msg.innerText = "REVISANDO REGISTROS DE ABORDAJE...";
                     const asisSnap = await db.ref(`sistema/asistencias/${fechaID}/${typedDni}`).once('value');
                     if (asisSnap.exists()) {
                         overlay.style.display = 'none';
                         document.getElementById('blocking-overlay').style.display = 'flex';
-                        document.getElementById('block-reason').innerText = "Tu DNI ya fue escaneado por el delegado y ya registraste tu abordaje el día de hoy. No puedes sacar otro ticket.";
+                        document.getElementById('block-reason').innerText = "Tu DNI ya fue escaneado por el delegado y ya registraste tu abordaje el día de hoy. No puedes volver a sacar ticket.";
                         return;
                     }
 
-                    msg.innerText = "CALCULANDO CUPOS EN TIEMPO REAL...";
+                    // 3. ¡CORRECCIÓN APLICADA AQUÍ! VERIFICAR PRIMERO SI YA TIENE TICKET
+                    msg.innerText = "BUSCANDO TICKET PREVIO...";
+                    const refViajeTarde = db.ref(`sistema/viajes/${fechaID}/tarde`);
+                    const snapReg = await refViajeTarde.child(`registros/${typedDni}`).once('value');
+                    
+                    if(snapReg.exists()){
+                        // Si ya tiene ticket, entra sin importar si el turno cerró o si está lleno.
+                        msg.innerText = "RECUPERANDO TICKET...";
+                        this.renderFinal(alu, typedDni, snapReg.val());
+                        return;
+                    }
+
+                    // ========================================================
+                    // SI LLEGA A ESTE PUNTO, ES UN ALUMNO NUEVO PIDIENDO TICKET
+                    // ========================================================
+
+                    // 4. AHORA SÍ EVALUAMOS SI EL DELEGADO CERRÓ EL TURNO
+                    msg.innerText = "EVALUANDO ESTADO DEL TURNO...";
                     const cfgSnap = await db.ref('sistema/config').once('value');
                     const config = cfgSnap.val() || {};
                     const cuposMaximos = config.cupos_maximos || 40;
@@ -340,61 +337,50 @@
                         return;
                     }
 
-                    const refViajeTarde = db.ref(`sistema/viajes/${fechaID}/tarde`);
+                    // 5. SISTEMA ATÓMICO CONCURRENTE (SOPORTA +70 ALUMNOS A LA VEZ)
+                    msg.innerText = "PROCESANDO SOLICITUD EN SERVIDOR...";
                     
-                    // ¿EL ALUMNO YA TIENE TICKET? -> Se lo mostramos directamente.
-                    const snapReg = await refViajeTarde.child(`registros/${typedDni}`).once('value');
-                    if(snapReg.exists()){
-                        this.renderFinal(alu, typedDni, snapReg.val());
-                        return;
-                    }
+                    refViajeTarde.child('contador').transaction(
+                        (currentCount) => {
+                            // Si ya se llenó, aborta la transacción internamente en Google Firebase
+                            if ((currentCount || 0) >= cuposMaximos) {
+                                return; // Esto cancela la escritura (devuelve undefined)
+                            }
+                            // Si hay espacio, suma 1 de forma segura y bloqueada
+                            return (currentCount || 0) + 1;
+                        }, 
+                        (error, committed, snapshot) => {
+                            if (error) {
+                                overlay.style.display = 'none';
+                                return Swal.fire('Error', 'Transacción denegada por seguridad.', 'error');
+                            }
 
-                    // SI NO TIENE TICKET -> Verificamos que queden cupos.
-                    const countSnap = await refViajeTarde.child('contador').once('value');
-                    const countActual = countSnap.val() || 0;
-
-                    if (countActual >= cuposMaximos) {
-                        overlay.style.display = 'none';
-                        this.showBlockScreen('lleno', cuposMaximos);
-                        return;
-                    }
-
-                    // GENERACIÓN DEL NUEVO TICKET
-                    msg.innerText = "ASIGNANDO ASIENTO Y GENERANDO CÓDIGO...";
-                    refViajeTarde.child('contador').transaction(c => (c || 0) + 1, (err, comm, snapCont) => {
-                        
-                        if(err) {
-                            overlay.style.display = 'none';
-                            return Swal.fire('Error', 'Transacción denegada por seguridad de Firebase.', 'error');
-                        }
-
-                        if(comm){
-                            if (snapCont.val() > cuposMaximos) {
-                                refViajeTarde.child('contador').set(cuposMaximos); 
+                            // Si se canceló la transacción, es porque llegó al cupo máximo
+                            if (!committed) {
                                 overlay.style.display = 'none';
                                 this.showBlockScreen('lleno', cuposMaximos);
                                 return;
-                            }
-
+                            } 
+                            
+                            // SI LA TRANSACCIÓN FUE EXITOSA (OBTUVO CUPO)
+                            const newSeatNumber = snapshot.val();
                             const data = { 
                                 nombre: alu.Estudiante || "Estudiante", 
-                                orden: snapCont.val(),
+                                orden: newSeatNumber,
                                 hora: this.getRealTime().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
                             };
                             
+                            // Guarda los datos y renderiza el ticket
                             refViajeTarde.child(`registros/${typedDni}`).set(data)
                             .then(() => {
                                 this.renderFinal(alu, typedDni, data);
                             })
                             .catch(errorEscritura => {
                                 overlay.style.display = 'none';
-                                Swal.fire('Error', 'No se pudo guardar su ticket.', 'error');
+                                Swal.fire('Error Crítico', 'Se reservó tu cupo pero falló la conexión al guardar los datos.', 'error');
                             });
-                        } else {
-                            overlay.style.display = 'none';
-                            Swal.fire('Advertencia', 'No se pudo reservar el cupo, intenta de nuevo.', 'warning');
                         }
-                    });
+                    );
 
                 } catch (e) {
                     overlay.style.display = 'none';
@@ -403,7 +389,7 @@
             },
 
             renderFinal: function(alu, dni, ticket) {
-                // Al mostrar el ticket, RESETEAMOS el cronómetro a exactamente 1 minuto desde este momento.
+                // Al mostrar el ticket, RESETEAMOS el cronómetro de 1 minuto
                 sessionStorage.setItem('auth_timestamp', Date.now());
 
                 const fechaFormat = this.getRealTime().toLocaleDateString('es-PE', { weekday:'long', year:'numeric', month:'long', day:'numeric' }).toUpperCase();
@@ -414,7 +400,6 @@
                 document.getElementById('t-cod').innerText = alu.Codigo || alu.codigo || "S/C";
                 document.getElementById('t-hora').innerText = ticket.hora;
                 
-                // EL TICKET YA NO MUESTRA NÚMERO, SIEMPRE MOSTRARÁ LA PALABRA "ASIENTO"
                 document.getElementById('seat-area').innerText = "ASIENTO";
 
                 // GENERACIÓN DE QR PARA DELEGADO
